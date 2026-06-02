@@ -34,6 +34,7 @@
                     <th style="padding: 1rem; border-bottom: 1px solid var(--border-color);">前台標籤</th>
                     <th style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center;">簡目頁顯示欄位</th>
                     <th style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center;">詳目頁顯示欄位</th>
+                    <th style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center; width: 80px;">排序</th>
                 </tr>
             </thead>
             <tbody>
@@ -52,10 +53,13 @@
                     <td style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center;">
                         <input type="checkbox" name="detail_{{ f.CONFIG_ID }}" {% if f.SHOW_IN_DETAIL == 'Y' %}checked{% endif %} style="transform: scale(1.5);">
                     </td>
+                    <td style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center;">
+                        <input type="number" name="sort_{{ f.CONFIG_ID }}" value="{{ f.SORT_ORDER or 999 }}" class="form-control" style="width: 70px; display: inline-block; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; text-align: center;">
+                    </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="5" style="padding: 2rem; text-align: center; color: #94a3b8;">請先透過系統管理員於 SYSTEM_DB 中載入 TBL_FIELD_CONFIG 初始化表單。</td>
+                    <td colspan="6" style="padding: 2rem; text-align: center; color: #94a3b8;">請先透過系統管理員於 SYSTEM_DB 中載入 TBL_FIELD_CONFIG 初始化表單。</td>
                 </tr>
                 {% endfor %}
             </tbody>

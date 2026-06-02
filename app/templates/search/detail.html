@@ -11,7 +11,7 @@
    Section 1: 通用欄位（由 portal_config.detail_fields 控制）
    ────────────────────────────────────────────────────────────── #}
 <table style="max-width: 700px; margin-bottom: 20px; text-align: left; border-collapse: collapse; width: 100%; border: 1px solid #e2e8f0;">
-    {% for field_item in get_dynamic_fields_with_labels(record.DATA_TYPE, True) %}
+    {% for field_item in get_dynamic_fields_with_labels(record.get('DATA_TYPE', '書目'), True) %}
         {% set field = field_item.FIELD_NAME %}
         {% set label = field_item.FIELD_LABEL %}
         {% set val = record.get(field) %}
@@ -99,7 +99,7 @@
 {# ── 操作按鈕列 ── #}
 
 <div class="mt-4" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
-    {% if record.get('DATA_TYPE') != '技術報告' or record.get('SECRET_LV_CDE') == 'NOR' or record.get('OVC_SECRET_LV_CDE') == 'NOR' %}
+    {% if record.get('DATA_TYPE') != '技術報告' or record.get('IS_NOR') %}
     <button id="downloadBtn" class="btn" style="background-color: #0284c7; color: white;">下載檔案</button>
     {% endif %}
 
@@ -112,8 +112,8 @@
         </button>
     </form>
 
-    {# 返回簡目：優先使用 session 記錄的上一次搜尋 URL，無則回首頁 #}
-    <a href="{{ session.get('last_search_url') or url_for('search.index') }}"
+    {# 返回簡目：優先使用後端動態偵測來源 back_url，次選 session 記錄，無則回首頁 #}
+    <a href="{{ back_url or session.get('last_search_url') or url_for('search.index') }}"
        class="btn" style="background-color: #64748b; color: white; text-decoration: none;
               padding: 6px 12px; border-radius: 4px;">
         返回簡目列表

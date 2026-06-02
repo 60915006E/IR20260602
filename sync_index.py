@@ -329,7 +329,7 @@ def sync_data():
                     SELECT 
                         '2_' || OVC_HS_NO AS UNIQUE_ID, OVC_HS_NO AS SYS_NO, '史政' AS DATA_TYPE, 2 AS TYPE_SORT_ORDER,
                         OVN_HS_NAME AS TITLE, OVC_HS_SUMMARY AS SUMMARY, NULL AS AUTHOR, ODT_HS_EVENT_DATE AS PUBLISH_DATE,
-                        '一般' AS SECRET_LV_CDE, OVC_HS_PULISH_YEAE AS YEAR, OVN_HA_UNIT_NAME AS DEPT_NAME,
+                        NULL AS SECRET_LV_CDE, OVC_HS_PULISH_YEAE AS YEAR, OVN_HA_UNIT_NAME AS DEPT_NAME,
                         OVC_HS_CAT_CDE, OVC_HS_CAT_NAME, OVC_HA_NO, OVN_HA_TYPE, ONB_HA_UNIT_NUM, OVC_HA_LIB_MANAGE, OVN_HA_GET_INFO, 
                         OVC_GET_YEAR, OVN_HA_BELONG, OVC_HA_SIZE, OVC_HA_ROUND, OVC_HA_SPECIAL_SIZE
                     FROM {prefix_val}{table_name}
@@ -340,7 +340,7 @@ def sync_data():
                     SELECT 
                         '3_' || OVC_PAPER_ID AS UNIQUE_ID, OVC_PAPER_ID AS SYS_NO, '逸光報' AS DATA_TYPE, 3 AS TYPE_SORT_ORDER,
                         OVN_PAPER_NAME AS TITLE, NULL AS SUMMARY, OVN_PAPER_AUTHOR AS AUTHOR, NULL AS PUBLISH_DATE,
-                        '一般' AS SECRET_LV_CDE, NULL AS YEAR, NULL AS DEPT_NAME
+                        NULL AS SECRET_LV_CDE, NULL AS YEAR, NULL AS DEPT_NAME
                     FROM {prefix_val}{table_name}
                     WHERE OVC_PUBLIC_TYPE_CDE = 'Y' {time_filter_val}
                     """
@@ -349,7 +349,7 @@ def sync_data():
                     SELECT 
                         '4_' || OVC_TO_NO AS UNIQUE_ID, OVC_TO_NO AS SYS_NO, '史政照片' AS DATA_TYPE, 4 AS TYPE_SORT_ORDER,
                         OVC_TO_NAME AS TITLE, OVN_TO_SUMMARY AS SUMMARY, OVN_TO_PEOPLE AS AUTHOR, ODT_TO_DATE AS PUBLISH_DATE,
-                        '一般' AS SECRET_LV_CDE, NULL AS YEAR, OVC_TO_APPLY_DEPT1_NAME || OVC_TO_APPLY_DEPT2_NAME AS DEPT_NAME,
+                        NULL AS SECRET_LV_CDE, NULL AS YEAR, OVC_TO_APPLY_DEPT1_NAME || OVC_TO_APPLY_DEPT2_NAME AS DEPT_NAME,
                         OVN_TO_PLACE, OVC_TO_DEPT1_NAME || OVC_TO_DEPT2_NAME AS TO_DEPT_NAME
                     FROM {prefix_val}{table_name}
                     WHERE OVC_PUBLIC_TYPE_CDE = 'Y' {time_filter_val}
@@ -414,7 +414,10 @@ def sync_data():
             else:
                 dept_f = find_best_field(dept_candidates, "NULL")
 
-            secret_f = find_best_field(secret_candidates, "'一般'")
+            if data_type == "技術報告":
+                secret_f = find_best_field(secret_candidates, "NULL")
+            else:
+                secret_f = "NULL"
 
             # 拼裝動態 SQL
             select_items = []

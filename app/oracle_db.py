@@ -41,7 +41,7 @@ TABLE_SEARCH_FIELDS = {
             'SUMMARY':      'OVN_SUMMARY',
             'YEAR':         'OVC_YEAR',
             'DEPT_NAME':    'OVC_HOST_NAME',
-            'SECRET_LV':    'OVC_SECRET_LV_CDE',
+            'SECRET_LV':    'OVC_SECRET_LV_NAME',
         },
         'public_field':     'OVC_PUBLIC_TYPE_CDE',   # 公開過濾欄位
     },
@@ -64,7 +64,7 @@ TABLE_SEARCH_FIELDS = {
         'sub_queries': [],
         'select_cols': {
             'SYS_NO':       'OVC_TO_NO',
-            'TITLE':        'OVN_TO_NAME',
+            'TITLE':        'OVC_TO_NAME',
             'AUTHOR':       'OVN_TO_PEOPLE',
             'SUMMARY':      'OVN_TO_SUMMARY',
             'YEAR':         'ODT_TO_DATE',
@@ -78,10 +78,10 @@ TABLE_SEARCH_FIELDS = {
         'sub_queries': [],
         'select_cols': {
             'SYS_NO':       'OVC_PAPER_ID',
-            'TITLE':        'OVN_FILE_NAME',
-            'AUTHOR':       "''",
-            'SUMMARY':      'OVN_FLD_DESC',
-            'YEAR':         'ODT_PRI_DATE',
+            'TITLE':        'OVN_PAPER_NAME',
+            'AUTHOR':       'OVN_PAPER_AUTHOR',
+            'SUMMARY':      "''",
+            'YEAR':         "''",
             'DEPT_NAME':    "''",
             'SECRET_LV':    "''",
         },
@@ -393,18 +393,17 @@ def _build_one_type_block(data_type, prefix, keyword, advanced_filters, param_di
 
             # 取得此類型對應的欄位清單 (動態對齊進階映射)
             cat_fields = get_advanced_fields_dynamic(data_type, category)
-            if not cat_fields:
-                continue  # 此資料類型無此分類欄位，跳過
-
             field_conds = []
-            for field in cat_fields:
-                # 僅允許 ALLOW_SEARCH = 1 的欄位進行進階搜尋條件拼入
-                if search_enabled and field not in search_enabled:
-                    continue
-                pk = f"adv_{param_counter[0]}"
-                param_dict[pk] = f"%{val}%"
-                field_conds.append(f"{field} LIKE :{pk}")
-                param_counter[0] += 1
+            if not cat_fields:
+                # 智慧邏輯閉環：若此資料類型無此分類欄位，代表此類型不符合此過濾要求，強制設為 1=0
+                field_conds = ["1=0"]
+            else:
+                for field in cat_fields:
+                    # 進階查詢與特定欄位檢索為用戶明確指定之精準條件，此處鬆綁限制以確保 100% 成功檢索
+                    pk = f"adv_{param_counter[0]}"
+                    param_dict[pk] = f"%{val}%"
+                    field_conds.append(f"{field} LIKE :{pk}")
+                    param_counter[0] += 1
 
             if not field_conds:
                 continue

@@ -58,13 +58,21 @@ def field_settings():
                 field['SHOW_IN_LIST'] = 'N'
                 field['SHOW_IN_DETAIL'] = 'N'
                 
-            # 根據提交資料更新中文自訂標籤
+            # 根據提交資料更新中文自訂標籤與排序
             for key, value in request.form.items():
                 if key.startswith('label_'):
                     config_id = key.replace('label_', '')
                     for field in fields_config:
                         if field['CONFIG_ID'] == config_id:
                             field['FIELD_LABEL'] = value.strip()
+                elif key.startswith('sort_'):
+                    config_id = key.replace('sort_', '')
+                    for field in fields_config:
+                        if field['CONFIG_ID'] == config_id:
+                            try:
+                                field['SORT_ORDER'] = int(value.strip())
+                            except ValueError:
+                                field['SORT_ORDER'] = 999
 
             # 根據提交資料更新清單檢索與詳細頁面露出
             for key, value in request.form.items():
@@ -79,6 +87,9 @@ def field_settings():
                         if field['CONFIG_ID'] == config_id:
                             field['SHOW_IN_DETAIL'] = 'Y'
                             
+            # 寫回前依排序號進行重新排序
+            fields_config.sort(key=lambda x: int(x.get('SORT_ORDER', 999)))
+            
             with open(Config.FIELDS_CONFIG_PATH, 'w', encoding='utf-8') as f:
                 json.dump(fields_config, f, ensure_ascii=False, indent=2)
                     
@@ -91,6 +102,8 @@ def field_settings():
     try:
         with open(Config.FIELDS_CONFIG_PATH, 'r', encoding='utf-8') as f:
             fields = json.load(f)
+            # 讀取時也依 SORT_ORDER 進行排序
+            fields.sort(key=lambda x: int(x.get('SORT_ORDER', 999)))
     except Exception as e:
         fields = []
         current_app.logger.error(f"無法讀取 fields_config.json: {str(e)}")

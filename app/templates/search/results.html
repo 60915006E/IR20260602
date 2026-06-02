@@ -1,50 +1,80 @@
 {% extends "base.html" %}
 
+{% block title %}進階搜尋結果 - 機構典藏系統{% endblock %}
+
 {% block content %}
-<h2>搜尋結果</h2>
+<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 1000px; margin: 0 auto; margin-top:20px;">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <h2 style="color: var(--primary-color); margin: 0;"><i class="bi bi-search"></i> 進階搜尋結果</h2>
+        <a href="{{ url_for('search.advanced_search') }}" class="btn btn-outline-secondary btn-sm">重新檢索</a>
+    </div>
 
-{% if error_msg %}
-    <div class="alert alert-danger">{{ error_msg }}</div>
-{% endif %}
-
-{% if keyword %}
-    <p>您的搜尋關鍵字：<strong>{{ keyword }}</strong></p>
-{% endif %}
-
-{% if records %}
-    <p>共找到 {{ records|length }} 筆資料</p>
-    <table>
-        <thead>
-            <tr>
-                <th>編號</th>
-                <th>標題</th>
-                <th>作者</th>
-                <th>年份</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in records %}
-            <tr>
-                <td>{{ row.DOC_ID }}</td>
-                <td>{{ row.DOC_TITLE }}</td>
-                <td>{{ row.DOC_AUTHOR }}</td>
-                <td>{{ row.PUBLISH_YEAR }}</td>
-                <td>
-                    <a href="{{ url_for('search_test.get_detail', token=row.DOC_ID | sign_doc) }}" class="btn btn-secondary">檢視詳細</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-{% else %}
-    {% if not error_msg %}
-        <div class="alert" style="background-color: #f8dbdb; color: #b91c1c; padding: 15px; border-radius: 6px; margin-top: 20px;">
-            <i class="bi bi-exclamation-triangle"></i> 找不到符合條件的結果，請放寬搜尋條件。
-            <div class="mt-3">
-                <a href="{{ url_for('search.advanced_search') }}" class="btn btn-outline-danger btn-sm">重新檢索</a>
-            </div>
-        </div>
+    {% if error_msg %}
+        <div class="alert alert-danger">{{ error_msg }}</div>
     {% endif %}
-{% endif %}
+
+    {% if keyword %}
+        <p class="text-muted">基礎檢索詞：<strong>{{ keyword }}</strong></p>
+    {% endif %}
+
+    {% if records %}
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <span class="badge bg-primary" style="font-size: 0.95rem; padding: 6px 12px;">共找到 {{ records|length }} 筆符合資料</span>
+        </div>
+        
+        <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+            <table class="table" style="width: 100%; border-collapse: collapse; margin-bottom: 0;">
+                <thead style="background: #f8fafc;">
+                    <tr>
+                        <th style="padding: 12px 15px; border-bottom: 2px solid #e2e8f0;">資料類型</th>
+                        <th style="padding: 12px 15px; border-bottom: 2px solid #e2e8f0;">系統唯一編號</th>
+                        <th style="padding: 12px 15px; border-bottom: 2px solid #e2e8f0;">標題</th>
+                        <th style="padding: 12px 15px; border-bottom: 2px solid #e2e8f0;">作者</th>
+                        <th style="padding: 12px 15px; border-bottom: 2px solid #e2e8f0; text-align: center;">年度</th>
+                        <th style="padding: 12px 15px; border-bottom: 2px solid #e2e8f0; text-align: center; width: 120px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in records %}
+                    <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 12px 15px; vertical-align: middle;">
+                            <span class="card-type type-{{ row.get('DATA_TYPE') }}" style="padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; background: #e0f2fe; color: #0369a1;">
+                                {{ row.get('DATA_TYPE') }}
+                            </span>
+                        </td>
+                        <td style="padding: 12px 15px; font-family: monospace; color: #475569; vertical-align: middle;">
+                            {{ row.get('SYS_NO') or row.get('DOC_ID') or '（無）' }}
+                        </td>
+                        <td style="padding: 12px 15px; font-weight: 600; color: #0f172a; vertical-align: middle;">
+                            {{ row.get('TITLE') or row.get('DOC_TITLE') or '（無標題）' }}
+                        </td>
+                        <td style="padding: 12px 15px; color: #334155; vertical-align: middle;">
+                            {{ row.get('AUTHOR') or row.get('DOC_AUTHOR') or '（無）' }}
+                        </td>
+                        <td style="padding: 12px 15px; text-align: center; color: #64748b; vertical-align: middle;">
+                            {{ row.get('YEAR') or row.get('PUBLISH_YEAR') or '（無）' }}
+                        </td>
+                        <td style="padding: 12px 15px; text-align: center; vertical-align: middle;">
+                            <a href="{{ url_for('search.get_detail', token=(row.get('SYS_NO') or row.get('DOC_ID')) | sign_doc) }}" 
+                               class="btn btn-sm" style="background-color: var(--primary-color); color: white; border-radius: 4px; padding: 4px 10px; font-size: 0.85rem; text-decoration: none;">
+                                查看詳細
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        {% if not error_msg %}
+            <div class="alert" style="background-color: #f8dbdb; color: #b91c1c; padding: 1.5rem; border-radius: 8px; margin-top: 20px; border: 1px solid #fca5a5;">
+                <strong><i class="bi bi-exclamation-triangle"></i> 找不到符合條件的結果。</strong> 請嘗試放寬篩選範圍或更換檢索詞。
+                <div class="mt-3">
+                    <a href="{{ url_for('search.advanced_search') }}" class="btn btn-outline-danger btn-sm">重新進行進階檢索</a>
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
 {% endblock %}

@@ -16,11 +16,8 @@
     </div>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 style="color: var(--primary-color); margin: 0;"><i class="bi bi-tools"></i> 主題特藏館編輯：{{ theme_name }}</h2>
+        <h2 style="color: var(--primary-color); margin: 0;"><i class="bi bi-tools"></i> 主題特藏館編輯：{{ theme.title }}</h2>
         <a href="{{ url_for('search.theme_admin') }}" class="btn btn-outline-secondary btn-sm">返回總覽</a>
-    </div>
-    <div class="alert alert-info py-2 px-3 mb-4" style="font-size: 0.9rem;">
-        <strong>系統說明：</strong> 網址與代號 <code>{{ theme_name }}</code> 為內部系統唯一識別碼。您在此處設定的「主題館顯示名稱 (標題)」即為前台使用者看到的正式名稱。
     </div>
 
     <!-- 基礎設定與獨立新增書目區塊 -->

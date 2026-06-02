@@ -204,7 +204,7 @@ def browse():
     tech_stats = {
         'years':      _run_sqlite("SELECT YEAR AS year, COUNT(*) AS count FROM GLOBAL_SEARCH_INDEX WHERE DATA_TYPE = '技術報告' AND YEAR IS NOT NULL AND YEAR != '' GROUP BY YEAR ORDER BY YEAR DESC"),
         'depts':      _run_sqlite("SELECT DEPT_NAME AS dept, COUNT(*) AS count FROM GLOBAL_SEARCH_INDEX WHERE DATA_TYPE = '技術報告' AND DEPT_NAME IS NOT NULL AND DEPT_NAME != '' GROUP BY DEPT_NAME ORDER BY count DESC"),
-        'sec_levels': _run_sqlite("SELECT SECRET_LV_CDE AS sec_lvl, COUNT(*) AS count FROM GLOBAL_SEARCH_INDEX WHERE DATA_TYPE = '技術報告' AND SECRET_LV_CDE IS NOT NULL AND SECRET_LV_CDE != '' GROUP BY SECRET_LV_CDE ORDER BY count DESC"),
+        'sec_levels': _run_sqlite("SELECT json_extract(EXACT_DATA_JSON, '$.OVC_SECRET_LV_NAME') AS sec_lvl, COUNT(*) AS count FROM GLOBAL_SEARCH_INDEX WHERE DATA_TYPE = '技術報告' GROUP BY sec_lvl HAVING sec_lvl IS NOT NULL AND sec_lvl != '' ORDER BY count DESC"),
     }
 
     # 2. 史政分類統計
@@ -292,11 +292,17 @@ def do_search():
                 where_clauses.append("SEARCH_TEXT LIKE :q")
                 params['q'] = f"%{q}%"
             if year_filter:
-                where_clauses.append("YEAR = :year")
+                where_clauses.append("(YEAR = :year OR SUBSTR(PUBLISH_DATE, 1, 4) = :year)")
                 params['year'] = year_filter
             if dept_filter:
                 where_clauses.append("DEPT_NAME = :dept")
                 params['dept'] = dept_filter
+            if sec_lvl_filter:
+                where_clauses.append("(SECRET_LV_CDE = :sec_lvl OR json_extract(EXACT_DATA_JSON, '$.OVC_SECRET_LV_NAME') = :sec_lvl)")
+                params['sec_lvl'] = sec_lvl_filter
+            if cat_name_filter:
+                where_clauses.append("json_extract(EXACT_DATA_JSON, '$.OVC_HS_CAT_NAME') = :cat_name")
+                params['cat_name'] = cat_name_filter
                 
             # 分類過濾 (技術報告/史政/史政照片/逸光報)
             if data_types:
@@ -516,6 +522,9 @@ from config import Config
 @login_required
 def theme_view(theme_name):
     """主題館功能：從 ThemeManager 載入對應清單，再從 DATA_DB 利用 OFFSET/FETCH 抓回清單"""
+    # ── 儲存本次主題館 URL，供詳目頁「返回簡目」按鈕使用，修復跳回之前搜尋頁面的瑕疵 ──
+    session['last_search_url'] = request.url
+    
     # 統一使用 ThemeManager 讀取，移除重複的 JSON 直接讀取無效代碼
     from app.theme_manager import ThemeManager
     theme = ThemeManager.load(theme_name)
@@ -760,8 +769,31 @@ def results_view():
             advanced_filters=advanced_filters,
             data_types=data_types if data_types else None,
         )
-        records = oracle_execute(sql, param_dict)
+        raw_records = oracle_execute(sql, param_dict)
+        
+        # ── 進階查詢結果自癒包裝與欄位雙向 fallback ──
+        records = []
+        for r in raw_records:
+            ru = {k.upper(): v for k, v in r.items()}
+            # 確保 SYS_NO, TITLE 等通用別名，與原本的 DOC_ID 等舊配置全部並存
+            sys_no = ru.get('SYS_NO') or ru.get('DOC_ID') or ''
+            title = ru.get('TITLE') or ru.get('DOC_TITLE') or '無標題'
+            author = ru.get('AUTHOR') or ru.get('DOC_AUTHOR') or ''
+            year = ru.get('YEAR') or ru.get('PUBLISH_YEAR') or ''
+            
+            ru['SYS_NO'] = sys_no
+            ru['DOC_ID'] = sys_no
+            ru['TITLE'] = title
+            ru['DOC_TITLE'] = title
+            ru['AUTHOR'] = author
+            ru['DOC_AUTHOR'] = author
+            ru['YEAR'] = year
+            ru['PUBLISH_YEAR'] = year
+            ru['DATA_TYPE'] = ru.get('DATA_TYPE')
+            records.append(ru)
+            
     except Exception as e:
+        import traceback
         current_app.logger.error(f"Search Query Failed: {str(e)}\n{traceback.format_exc()}")
         records = []
         error_msg = f"查詢時發生錯誤，請聯絡系統管理員。錯誤訊息: {str(e)}"
@@ -813,6 +845,16 @@ def api_mini_search():
 @bp.route('/detail/<token>', methods=['GET'])
 @login_required
 def get_detail(token):
+    # ── 自動探測與自癒返回簡目 URL ──
+    back_url = None
+    referer = request.referrer
+    if referer and request.host_url in referer:
+        # 只允許本站內部連結，且排除詳目頁自身、下載及收藏等非列表路由
+        excluded_patterns = ['/detail/', '/download', '/add_bookmark', '/remove_bookmark', '/api/']
+        if not any(pat in referer for pat in excluded_patterns):
+            back_url = referer
+            session['last_search_url'] = referer
+
     from itsdangerous import URLSafeSerializer
     from itsdangerous.exc import BadSignature
     serializer = URLSafeSerializer(current_app.config['SECRET_KEY'], salt='permalink-salt')
@@ -924,6 +966,21 @@ def get_detail(token):
         if not record:
             abort(404, description="找不到此公開文件或文件不存在。")
             
+        # ── 依照使用者唯一要求：僅以 OVC_SECRET_LV_CDE 是否為 'NOR' 來判定下載權限，同時補上大寫與小寫雙鍵映射 ──
+        ovc_sec_lv = str(record.get('OVC_SECRET_LV_CDE') or '').strip().upper()
+        is_nor_val = (ovc_sec_lv == 'NOR')
+        
+        final_record = {}
+        for k, v in record.items():
+            final_record[k.upper()] = v
+            final_record[k.lower()] = v
+            
+        final_record['IS_NOR'] = is_nor_val
+        final_record['is_nor'] = is_nor_val
+        final_record['DATA_TYPE'] = record.get('DATA_TYPE')
+        final_record['data_type'] = record.get('DATA_TYPE')
+        record = final_record
+
         # 相關文件：以相同 OVC_HOST_NAME / OVC_PUBLISH_UNIT 或 OVC_RP_CAT_NAME 查詢前 5 筆
         # 我們將條件放寬以相容不同表的欄位
         dept_name = record.get('OVC_HOST_NAME') or record.get('OVC_PUBLISH_UNIT') or record.get('OVN_RP_MAIN_AUTHOR_DEPT_NAME') or record.get('OVN_HA_BELONG')
@@ -944,7 +1001,7 @@ def get_detail(token):
         current_app.logger.error(f"Detail Query Failed: {str(e)}\n{traceback.format_exc()}")
         abort(500, description="系統內部錯誤。")
 
-    return render_template('search/detail.html', record=record, related_docs=related_docs, permalink_token=permalink_token, has_prove_data=has_prove_data)
+    return render_template('search/detail.html', record=record, related_docs=related_docs, permalink_token=permalink_token, has_prove_data=has_prove_data, back_url=back_url)
 
 @bp.route('/share/<token>')
 def permalink_view(token):
