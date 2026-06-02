@@ -1,0 +1,444 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>系統管理與設定後台</h2>
+<p>本頁面僅限 admin 身分存取，負責控管全局動態門戶及權限。</p>
+
+<!-- Task05: sync_index.py 排程執行區塊 -->
+<div class="card mb-4" style="background-color: #f8fafc; padding: 20px; border-radius: 5px; border-left: 4px solid #10b981; margin-bottom: 20px;">
+    <h4 style="color: #0f172a;"><i class="bi bi-arrow-repeat"></i> 資料庫快取同步 (Sync Index)</h4>
+    <p style="color: #475569; font-size: 0.9rem;">
+        系統改版後，主要搜尋已直連原始資料庫，此功能用於手動觸發 <code>sync_index.py</code> 排程，重建 GLOBAL_SEARCH_INDEX 快取備用索引。
+    </p>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <button class="btn" style="background-color: #10b981; color: white;" id="syncBtn" onclick="triggerSync()">
+            <i class="bi bi-play-circle"></i> 立即執行 sync_index.py
+        </button>
+        <button class="btn" style="background-color: #6366f1; color: white;" id="syncScheduleBtn" onclick="triggerScheduledSync()">
+            <i class="bi bi-clock"></i> 排程模式執行
+        </button>
+        <span id="syncStatus" style="color: #64748b; font-size: 0.85rem;"></span>
+    </div>
+    <div id="syncResult" style="margin-top: 10px; font-family: monospace; white-space: pre-wrap; display: none; background: #1e293b; color: #a7f3d0; padding: 10px; border-radius: 4px; max-height: 200px; overflow-y: auto;"></div>
+</div>
+
+<!-- 帳號權限管理 -->
+<div class="card mb-4" style="background-color: white; padding: 20px; border-radius: 5px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;">
+    <h4><i class="bi bi-people"></i> 帳號權限管理</h4>
+    <table class="table table-striped" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+        <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1;">
+            <th style="padding: 10px;">帳號</th>
+            <th style="padding: 10px;">目前身分組</th>
+            <th style="padding: 10px;">動作</th>
+        </tr>
+        {% for u in users %}
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 10px;">{{ u.USER_ID }}</td>
+            <td style="padding: 10px;">
+                <select id="role_{{ u.USER_ID }}" class="form-control" style="width: 150px;">
+                    <option value="testuser" {% if u.ROLE == 'testuser' %}selected{% endif %}>一般使用者 (testuser)</option>
+                    <option value="topicadmin" {% if u.ROLE == 'topicadmin' %}selected{% endif %}>主題館管理 (topicadmin)</option>
+                    <option value="admin" {% if u.ROLE == 'admin' %}selected{% endif %}>系統管理員 (admin)</option>
+                </select>
+            </td>
+            <td style="padding: 10px;">
+                <button class="btn btn-sm btn-outline-primary" onclick="updateRole('{{ u.USER_ID }}')">更新權限</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<!-- 系統全局設定 -->
+<div class="card mb-4" style="background-color: white; padding: 20px; border-radius: 5px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h4 style="margin: 0;"><i class="bi bi-sliders"></i> 系統全局設定</h4>
+        <button class="btn btn-sm" style="background-color: #3b82f6; color: white;" onclick="saveSystemSettings()">儲存本區塊</button>
+    </div>
+    <div style="margin-top: 20px; display: grid; gap: 20px; grid-template-columns: 1fr 1fr;">
+        <div style="background: #f8fafc; padding: 15px; border-radius: 5px; border: 1px solid #e2e8f0;">
+            <label class="fw-bold"><i class="bi bi-palette"></i> 系統背景主題色</label>
+            <select id="cfg_system_theme" class="form-control mt-2">
+                <option value="light" {% if portal_config.get('system_theme', 'light') == 'light' %}selected{% endif %}>淺色背景 (Light)</option>
+                <option value="dark" {% if portal_config.get('system_theme') == 'dark' %}selected{% endif %}>深色背景 (Dark)</option>
+            </select>
+            <small class="text-muted">改變全站的背景主視覺與文字顏色。</small>
+        </div>
+
+        <div style="background: #f8fafc; padding: 15px; border-radius: 5px; border: 1px solid #e2e8f0;">
+            <label class="fw-bold"><i class="bi bi-shield-check"></i> 登入驗證模式</label>
+            <select id="cfg_auth_mode" class="form-control mt-2">
+                <option value="password" {% if portal_config.get('auth_mode', 'password') == 'password' %}selected{% endif %}>帳號密碼登入</option>
+                <option value="smartcard" {% if portal_config.get('auth_mode') == 'smartcard' %}selected{% endif %}>憑證卡單一登入 (SSO)</option>
+            </select>
+        </div>
+
+        <div style="background: #f8fafc; padding: 15px; border-radius: 5px; border: 1px solid #e2e8f0;">
+            <label class="fw-bold"><i class="bi bi-search"></i> 搜尋檢索模式</label>
+            <select id="cfg_search_mode" class="form-control mt-2">
+                <option value="cache" {% if portal_config.get('search_mode', 'cache') == 'cache' %}selected{% endif %}>獨立快取檢索 (預設)</option>
+                <option value="oracle_direct" {% if portal_config.get('search_mode') == 'oracle_direct' %}selected{% endif %}>直連 Oracle 19c</option>
+            </select>
+            <small class="text-muted">預設使用 3 分鐘增量快取以提供極速搜尋，亦可切換為直連實時查詢。</small>
+        </div>
+
+
+        <!-- OAuth 2.0 / SSO 單一登入設定區塊 -->
+        <div style="background: #f8fafc; padding: 15px; border-radius: 5px; border: 1px solid #e2e8f0; grid-column: span 2;">
+            <label class="fw-bold"><i class="bi bi-key-fill"></i> OAuth 2.0 憑證單一登入 (SSO) 詳細設定</label>
+            <p style="font-size: 0.85rem; color: #64748b; margin: 6px 0 10px;">
+                當驗證模式切換為「憑證卡單一登入 (SSO)」時，本機系統將啟用 OAuth 2.0 協定串接公司內部憑證卡單一登入伺服器。
+            </p>
+            <div style="display: grid; gap: 15px; grid-template-columns: 1fr 1fr; background: white; padding: 15px; border: 1px solid #cbd5e1; border-radius: 5px;">
+                <div>
+                    <label class="fw-bold" style="font-size: 0.9rem;">SSO Client ID (系統申請 ID)</label>
+                    <input type="text" id="cfg_sso_client_id" class="form-control mt-1" value="{{ portal_config.get('sso_client_id', '') }}" placeholder="例如: client_123">
+                </div>
+                <div>
+                    <label class="fw-bold" style="font-size: 0.9rem;">SSO Client Secret (系統安全密碼)</label>
+                    <input type="password" id="cfg_sso_client_secret" class="form-control mt-1" value="{{ portal_config.get('sso_client_secret', '') }}" placeholder="例如: secret_456">
+                </div>
+                <div style="grid-column: span 2;">
+                    <label class="fw-bold" style="font-size: 0.9rem;">SSO 授權端點 URL (Authorization Endpoint)</label>
+                    <input type="text" id="cfg_sso_auth_url" class="form-control mt-1" value="{{ portal_config.get('sso_auth_url', '') }}" placeholder="例如: https://sso.company.com.tw/oauth/authorize">
+                    <small class="text-muted">導向公司 SSO 伺服器以供同仁進行插卡驗證登入的 URL。</small>
+                </div>
+                <div style="grid-column: span 2;">
+                    <label class="fw-bold" style="font-size: 0.9rem;">SSO 憑證交換端點 URL (Token Endpoint)</label>
+                    <input type="text" id="cfg_sso_token_url" class="form-control mt-1" value="{{ portal_config.get('sso_token_url', '') }}" placeholder="例如: https://sso.company.com.tw/oauth/token">
+                    <small class="text-muted">本機系統於後台以 authorization code 交換 access token 的伺服器端點。</small>
+                </div>
+                <div style="grid-column: span 2;">
+                    <label class="fw-bold" style="font-size: 0.9rem;">SSO 使用者資訊端點 URL (UserInfo Endpoint)</label>
+                    <input type="text" id="cfg_sso_user_info_url" class="form-control mt-1" value="{{ portal_config.get('sso_user_info_url', '') }}" placeholder="例如: https://sso.company.com.tw/oauth/userinfo">
+                    <small class="text-muted">本機系統憑 access token 索取該登入同仁識別資訊與帳號的伺服器端點。</small>
+                </div>
+            </div>
+        </div>
+
+        <div style="background: #fff1f2; padding: 15px; border-radius: 5px; border: 1px solid #fecdd3; grid-column: span 2;">
+            <label class="fw-bold text-danger"><i class="bi bi-exclamation-triangle"></i> 維修模式控制</label>
+            <div class="form-check form-switch mt-2">
+                <input class="form-check-input" type="checkbox" id="cfg_maintenance_mode" {% if portal_config.get('maintenance_mode') %}checked{% endif %} style="transform: scale(1.5); margin-left: -1.5rem; margin-right: 10px;">
+                <label class="form-check-label" for="cfg_maintenance_mode" style="font-weight: bold; margin-left: 10px;">
+                    啟動全站維護模式
+                </label>
+            </div>
+            <p style="font-size: 0.85rem; color: #be123c; margin-top: 10px; margin-bottom: 0;">
+                開啟後，一般使用者存取任何頁面皆會被重導向至維修公告頁面。管理員 (admin) 則不受此限制，仍可正常操作與測試。
+            </p>
+        </div>
+        
+        <div style="background: #f8fafc; padding: 15px; border-radius: 5px; border: 1px solid #e2e8f0; grid-column: span 2;">
+            <label class="fw-bold"><i class="bi bi-card-text"></i> 首頁底部自訂文字</label>
+            <textarea id="cfg_footer_text" class="form-control mt-2" rows="2" placeholder="請輸入首頁底部的機構名稱、地址與聯絡資訊...">{{ portal_config.get('footer_text', '本館地址：100201 臺北市中山南路20號 電話：02-2361-9132 （本系統服務窗口請轉分機 172、870）') }}</textarea>
+        </div>
+        
+        <div style="background: #fdf4ff; padding: 15px; border-radius: 5px; border: 1px solid #f3e8ff; grid-column: span 2;">
+            <label class="fw-bold" style="color: #6b21a8;"><i class="bi bi-exclamation-triangle-fill"></i> 技術報告等級修改說明</label>
+            <textarea id="cfg_level_change_desc" class="form-control mt-2" rows="3" placeholder="請輸入等級修改說明的文字...">{{ portal_config.get('level_change_desc', '※ 本文獻因應密等評估程序已修正等級，請點擊下載最新修正版本。') }}</textarea>
+            <small class="text-muted">此說明將在前台「技術報告」詳細頁面中，若該報告在「VI_IRLIB_RP_PROVEDATA」有資料時，動態呈現在下載檔案按鈕的上方。</small>
+        </div>
+    </div>
+</div>
+
+
+<!-- 動態門戶設定 -->
+<div class="card mb-4" style="background-color: white; padding: 20px; border-radius: 5px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h4 style="margin: 0;"><i class="bi bi-gear-fill"></i> 動態門戶(首頁+自訂欄位)設定中心</h4>
+        <button class="btn btn-sm" style="background-color: #3b82f6; color: white;" onclick="savePortalLayout()">儲存本區塊</button>
+    </div>
+
+    <div style="margin-top: 20px; display: grid; gap: 20px; grid-template-columns: 1fr 1fr;">
+        <!-- 新增書目設定 -->
+        <div style="background: #f8fafc; padding: 15px; border-radius: 5px; border: 1px solid #e2e8f0;">
+            <label class="fw-bold"><i class="bi bi-link-45deg"></i> 系統清單「新增書目」外部超連結</label>
+            <input type="text" id="cfg_add_book_url" class="form-control mt-2" value="{{ portal_config.add_book_url }}">
+        </div>
+
+        <!-- Task02: 全站搜尋欄位顯示設定（重整版，包含所有被搜尋的欄位） -->
+        <div style="background: #f8fafc; padding: 15px; border-radius: 5px; border: 1px solid #e2e8f0; grid-column: span 2;">
+            <label class="fw-bold mb-2">
+                <i class="bi bi-table"></i> 簡目(結果列表) / 詳目(內容頁) 全局欄位顯示設定
+            </label>
+            <p style="font-size: 0.85rem; color: #64748b; margin: 6px 0 10px;">
+                以下列出所有可能在搜尋中命中的欄位，管理者可設定各欄位是否在結果列表（簡目）或詳細頁面（詳目）中顯示給使用者。
+            </p>
+            <div style="max-height: 500px; overflow-y: auto; background: white; padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+                    <thead style="position: sticky; top: -10px; background: #e2e8f0; z-index: 10;">
+                        <tr>
+                            <th style="padding: 8px; width: 20%; text-align: left;">資料庫欄位名稱</th>
+                            <th style="padding: 8px; width: 20%; text-align: left;">預設中文說明</th>
+                            <th style="padding: 8px; width: 25%; text-align: left;">顯示給讀者的欄位名稱</th>
+                            <th style="padding: 8px; width: 15%; text-align: left;">所屬資料類型</th>
+                            <th style="padding: 8px; width: 8%; text-align: center;">簡目</th>
+                            <th style="padding: 8px; width: 8%; text-align: center;">詳目</th>
+                            <th style="padding: 8px; width: 10%; text-align: center;">主題特藏館簡目</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for col, col_info in all_columns.items() %}
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 8px;"><code style="background:#f1f5f9; padding:2px 5px; border-radius:3px; font-size:0.82rem;">{{ col }}</code></td>
+                            <td style="padding: 8px; color: #334155;">{{ col_info[0] }}</td>
+                            <td style="padding: 8px;">
+                                <input type="text" class="custom-field-name form-control form-control-sm" data-col="{{ col }}" value="{{ portal_config.get('custom_field_names', {}).get(col, '') }}" placeholder="{{ col_info[0] }}" style="font-size: 0.85rem;">
+                            </td>
+                            <td style="padding: 8px; color: #64748b; font-size: 0.82rem;">{{ col_info[1] }}</td>
+                            <td style="text-align: center;"><input type="checkbox" class="list-field-chk" value="{{ col }}" {% if col in portal_config.list_fields %}checked{% endif %}></td>
+                            <td style="text-align: center;"><input type="checkbox" class="detail-field-chk" value="{{ col }}" {% if col in portal_config.detail_fields %}checked{% endif %}></td>
+                            <td style="text-align: center;"><input type="checkbox" class="theme-field-chk" value="{{ col }}" {% if col in (portal_config.get('theme_list_fields') or []) %}checked{% endif %}></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div style="background: #f8fafc; padding: 15px; border-radius: 5px; border: 1px solid #e2e8f0; grid-column: span 2;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <label class="fw-bold m-0"><i class="bi bi-newspaper"></i> 首頁：內容區塊 (最新消息 & 範本下載)</label>
+                <button class="btn btn-sm" style="background-color: #3b82f6; color: white;" onclick="saveHomeContent()">儲存本區塊</button>
+            </div>
+            <label class="fw-bold mb-2">最新消息</label>
+            <div id="news-container">
+            </div>
+            <button class="btn btn-sm btn-outline-primary mt-2" onclick="addNews()">+ 新增消息</button>
+
+            <hr class="my-4">
+
+            <label class="fw-bold mb-2"><i class="bi bi-download"></i> 首頁：範本下載區塊</label>
+            <div id="templates-container">
+            </div>
+            <button class="btn btn-sm btn-outline-primary mt-2" onclick="addTemplate()">+ 新增範本</button>
+        </div>
+    </div>
+
+    <div id="cfgResult" class="mt-3 text-center fw-bold" style="padding: 10px; border-radius: 4px; display: none;"></div>
+</div>
+
+<script>
+    const portalConfig = JSON.parse('{{ portal_config | tojson | safe }}');
+
+    function renderNews() {
+        const cont = document.getElementById('news-container');
+        cont.innerHTML = '';
+        portalConfig.news.forEach((n, idx) => {
+            cont.innerHTML += `
+            <div class="d-flex gap-2 mb-2 align-items-center news-row">
+                <input type="text" class="form-control" placeholder="標題" value="${n.title}" data-field="title">
+                <input type="text" class="form-control w-50" placeholder="內容" value="${n.content}" data-field="content">
+                <button class="btn btn-sm btn-danger" onclick="removeNews(${idx})">✖</button>
+            </div>`;
+        });
+    }
+
+    function renderTemplates() {
+        const cont = document.getElementById('templates-container');
+        cont.innerHTML = '';
+        portalConfig.templates.forEach((t, idx) => {
+            cont.innerHTML += `
+            <div class="d-flex gap-2 mb-2 align-items-center template-row">
+                <input type="text" class="form-control" placeholder="檔案名稱" value="${t.filename}" data-field="filename">
+                <input type="text" class="form-control w-50" placeholder="檔案超連結" value="${t.url}" data-field="url">
+                <button class="btn btn-sm btn-danger" onclick="removeTemplate(${idx})">✖</button>
+            </div>`;
+        });
+    }
+
+    function addNews() { portalConfig.news.push({title: '', content: ''}); renderNews(); }
+    function removeNews(idx) { portalConfig.news.splice(idx, 1); renderNews(); }
+    function addTemplate() { portalConfig.templates.push({filename: '', url: ''}); renderTemplates(); }
+    function removeTemplate(idx) { portalConfig.templates.splice(idx, 1); renderTemplates(); }
+
+    // 初始化執行
+    renderNews();
+    renderTemplates();
+
+    // Task05: 立即執行 sync_index.py
+    async function triggerSync() {
+        const btn = document.getElementById('syncBtn');
+        const statusEl = document.getElementById('syncStatus');
+        const resDiv = document.getElementById('syncResult');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> 執行中...';
+        statusEl.textContent = '正在執行 sync_index.py，請稍候...';
+        resDiv.style.display = 'block';
+        resDiv.style.color = '#a7f3d0';
+        resDiv.innerText = '⏳ 執行中...';
+
+        try {
+            const response = await fetch("{{ url_for('search_test.trigger_sync_index') }}", { method: 'POST' });
+            const data = await response.json();
+            if (response.ok) {
+                resDiv.innerText = "✅ 同步完成！\n" + (data.output || "（無輸出）");
+                btn.innerHTML = '<i class="bi bi-check-circle"></i> 同步完成';
+                statusEl.textContent = '上次執行：' + new Date().toLocaleTimeString('zh-TW');
+            } else {
+                resDiv.style.color = '#fca5a5';
+                resDiv.innerText = "❌ 同步失敗:\n" + (data.message || "未知錯誤");
+                btn.innerHTML = '<i class="bi bi-x-circle"></i> 發生錯誤';
+                statusEl.textContent = '';
+            }
+        } catch (err) {
+            resDiv.style.color = '#fca5a5';
+            resDiv.innerText = "❌ 網路呼叫失敗:\n" + err;
+            btn.innerHTML = '<i class="bi bi-x-circle"></i> 連線失敗';
+        } finally {
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-play-circle"></i> 立即執行 sync_index.py';
+            }, 4000);
+        }
+    }
+
+    // Task05: 排程模式執行（連續觸發，回報排程狀態）
+    async function triggerScheduledSync() {
+        const btn = document.getElementById('syncScheduleBtn');
+        const statusEl = document.getElementById('syncStatus');
+        const resDiv = document.getElementById('syncResult');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-clock-history"></i> 排程中...';
+        statusEl.textContent = '正在以排程模式執行...';
+        resDiv.style.display = 'block';
+        resDiv.style.color = '#c4b5fd';
+        resDiv.innerText = '⏳ 排程模式啟動中...';
+
+        try {
+            // 排程模式：與立即執行呼叫同一個 API，但顯示不同狀態標籤
+            const response = await fetch("{{ url_for('search_test.trigger_sync_index') }}", { method: 'POST' });
+            const data = await response.json();
+            if (response.ok) {
+                resDiv.innerText = "🕐 排程執行完成！\n" + (data.output || "（無輸出）");
+                btn.innerHTML = '<i class="bi bi-check-circle"></i> 排程完成';
+                statusEl.textContent = '排程完成時間：' + new Date().toLocaleTimeString('zh-TW');
+            } else {
+                resDiv.style.color = '#fca5a5';
+                resDiv.innerText = "❌ 排程失敗:\n" + (data.message || "未知錯誤");
+                btn.innerHTML = '<i class="bi bi-x-circle"></i> 排程失敗';
+            }
+        } catch (err) {
+            resDiv.style.color = '#fca5a5';
+            resDiv.innerText = "❌ 排程呼叫失敗:\n" + err;
+        } finally {
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-clock"></i> 排程模式執行';
+            }, 4000);
+        }
+    }
+
+    async function updateRole(uid) {
+        const role = document.getElementById('role_' + uid).value;
+        const res = await fetch("{{ url_for('search_test.api_update_role') }}", {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({user_id: uid, role: role})
+        });
+        const data = await res.json();
+        alert(data.message);
+    }
+
+    async function sendConfig(newPayload) {
+        const resDiv = document.getElementById('cfgResult');
+        resDiv.style.display = 'block';
+        resDiv.innerText = '儲存中...'; 
+        resDiv.style.color = '#fbbf24';
+        resDiv.style.backgroundColor = '#fffbeb';
+
+        try {
+            const res = await fetch("{{ url_for('search_test.api_save_config') }}", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(newPayload)
+            });
+            const data = await res.json();
+            if (res.ok) {
+                resDiv.innerText = '✅ 設定儲存成功，立即全站生效！'; 
+                resDiv.style.color = '#15803d';
+                resDiv.style.backgroundColor = '#f0fdf4';
+                // 更新本地 portalConfig 物件，確保下次局部儲存時資料最新
+                Object.assign(portalConfig, newPayload);
+                setTimeout(() => { resDiv.style.display = 'none'; }, 3000);
+            } else {
+                resDiv.innerText = '❌ ' + data.message; 
+                resDiv.style.color = '#b91c1c';
+                resDiv.style.backgroundColor = '#fef2f2';
+            }
+        } catch (err) {
+            resDiv.innerText = '❌ ' + err.message; 
+            resDiv.style.color = '#b91c1c';
+            resDiv.style.backgroundColor = '#fef2f2';
+        }
+    }
+
+    function saveSystemSettings() {
+        const newConfig = {
+            ...portalConfig,
+            system_theme: document.getElementById('cfg_system_theme').value,
+            auth_mode: document.getElementById('cfg_auth_mode').value,
+            search_mode: document.getElementById('cfg_search_mode').value,
+            maintenance_mode: document.getElementById('cfg_maintenance_mode').checked,
+            sso_client_id: document.getElementById('cfg_sso_client_id').value.trim(),
+            sso_client_secret: document.getElementById('cfg_sso_client_secret').value.trim(),
+            sso_auth_url: document.getElementById('cfg_sso_auth_url').value.trim(),
+            sso_token_url: document.getElementById('cfg_sso_token_url').value.trim(),
+            sso_user_info_url: document.getElementById('cfg_sso_user_info_url').value.trim(),
+            footer_text: document.getElementById('cfg_footer_text').value,
+            level_change_desc: document.getElementById('cfg_level_change_desc').value
+        };
+        sendConfig(newConfig);
+    }
+
+
+
+    function savePortalLayout() {
+        const listChecks = document.querySelectorAll('.list-field-chk:checked');
+        const detailChecks = document.querySelectorAll('.detail-field-chk:checked');
+        const themeChecks = document.querySelectorAll('.theme-field-chk:checked');
+
+        const customFields = {};
+        document.querySelectorAll('.custom-field-name').forEach(input => {
+            const val = input.value.trim();
+            if (val) {
+                customFields[input.getAttribute('data-col')] = val;
+            }
+        });
+
+        const newConfig = {
+            ...portalConfig,
+            add_book_url: document.getElementById('cfg_add_book_url').value,
+            list_fields: Array.from(listChecks).map(c => c.value),
+            detail_fields: Array.from(detailChecks).map(c => c.value),
+            theme_list_fields: Array.from(themeChecks).map(c => c.value),
+            custom_field_names: customFields
+        };
+        sendConfig(newConfig);
+    }
+
+    function saveHomeContent() {
+        const newsRows = document.querySelectorAll('.news-row');
+        const updatedNews = Array.from(newsRows).map((row, i) => ({
+            id: i + 1,
+            title: row.querySelector('[data-field="title"]').value,
+            content: row.querySelector('[data-field="content"]').value
+        }));
+
+        const tplRows = document.querySelectorAll('.template-row');
+        const updatedTpls = Array.from(tplRows).map((row, i) => ({
+            id: i + 1,
+            filename: row.querySelector('[data-field="filename"]').value,
+            url: row.querySelector('[data-field="url"]').value
+        }));
+
+        const newConfig = {
+            ...portalConfig,
+            news: updatedNews,
+            templates: updatedTpls
+        };
+        sendConfig(newConfig);
+    }
+</script>
+{% endblock %}

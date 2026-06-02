@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 800px; margin: 0 auto; margin-top:20px;">
+    
+    {# ── 橫向子導覽列 ── #}
+    <div class="admin-subnav" style="display: flex; gap: 10px; border-bottom: 2px solid var(--border-color); padding-bottom: 12px; margin-bottom: 2rem; flex-wrap: wrap;">
+        <a href="{{ url_for('admin.field_settings') }}" class="btn btn-sm btn-outline-secondary">前台顯示欄位控制</a>
+        <a href="{{ url_for('admin.oracle_fields_settings') }}" class="btn btn-sm btn-outline-secondary">Oracle 核心欄位配置</a>
+        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-sm btn-outline-secondary">使用者管理</a>
+        <a href="{{ url_for('search.theme_admin') }}" class="btn btn-sm btn-primary">主題館修改</a>
+        <a href="{{ url_for('admin.system_settings') }}" class="btn btn-sm btn-outline-secondary">系統組態設定</a>
+        <a href="{{ url_for('admin.audit_logs_view') }}" class="btn btn-sm btn-outline-secondary">系統稽核日誌</a>
+        <a href="{{ url_for('admin.system_health') }}" class="btn btn-sm btn-outline-secondary">系統健康度檢查</a>
+        <button id="adminDarkModeBtn" class="btn btn-sm btn-outline-secondary" style="margin-left: auto;">切換黑暗模式</button>
+    </div>
+
+    <h2 style="color: var(--primary-color); margin-bottom: 0.5rem;"><i class="bi bi-pencil-square"></i> 主題館管理介面</h2>
+    <p style="color: #64748b; margin-bottom: 2rem;">管理現有專題特藏館或新增全新的主題。</p>
+
+    <div class="list-group mb-4">
+        {% for id, theme in themes.items() %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-1 fw-bold">{{ theme.title }}</h5>
+                <small class="text-muted">內部代號 (網址): {{ id }}</small>
+                <br>
+                <small class="text-secondary">書目數量: {{ theme.sys_nos | length }} 筆</small>
+            </div>
+            <a href="{{ url_for('search.theme_edit', theme_name=id) }}" class="btn btn-outline-primary btn-sm">編輯書目與內容</a>
+        </div>
+        {% else %}
+        <div class="alert alert-secondary">目前尚未建立任何主題館</div>
+        {% endfor %}
+    </div>
+
+    <div style="background: #f8fafc; padding: 1.5rem; border: 1px dashed #cbd5e1; border-radius: 8px;">
+        <h5 class="fw-bold mb-3"><i class="bi bi-plus-circle"></i> 建立全新主題館</h5>
+        <div class="d-flex gap-2">
+            <input type="text" id="newThemeId" class="form-control" placeholder="輸入內部路由英文代號 (如: ai_tech_2)">
+            <button class="btn btn-success" style="white-space:nowrap;" onclick="createNewTheme()">建立新館</button>
+        </div>
+        <small class="text-muted mt-1 d-block">代號將做為網址一部分，建立後預設為空標題，請自動跳轉編輯畫面完成後續動作。</small>
+    </div>
+</div>
+
+<script>
+    function createNewTheme() {
+        const id = document.getElementById('newThemeId').value.trim();
+        if(!id) return alert('請輸入代號');
+        if(!/^[a-zA-Z0-9_]+$/.test(id)) return alert('代號只能包含英文、數字與底線');
+        
+        window.location.href = "{{ url_for('search.theme_admin') }}/edit/" + id;
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,511 @@
+:root {
+    --bg-color: #f8fafc;
+    --text-color: #1e293b;
+    --primary-color: #3b82f6;
+    --primary-hover: #2563eb;
+    --card-bg: #ffffff;
+    --border-color: #e2e8f0;
+    
+    /* Document Types Backgrounds */
+    --tech-bg: #e3f2fd;
+    --history-bg: #e8f5e9;
+    --photo-bg: #fff9c4;
+    --paper-bg: #f5f5f5;
+    
+    --transition: all 0.3s ease;
+}
+
+body.theme-dark {
+    --bg-color: #0f172a;
+    --text-color: #f8fafc;
+    --primary-color: #60a5fa;
+    --primary-hover: #3b82f6;
+    --card-bg: #1e293b;
+    --border-color: #334155;
+    
+    --tech-bg: #1e3a8a;
+    --history-bg: #14532d;
+    --photo-bg: #78350f;
+    --paper-bg: #334155;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+header {
+    background-color: var(--card-bg);
+    padding: 1rem 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+header a.logo {
+    text-decoration: none;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: var(--text-color);
+    margin-left: 1.5rem;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.nav-links a:hover {
+    color: var(--primary-hover);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+/* Search Bar */
+.search-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.search-container form {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.search-input {
+    flex: 1;
+    padding: 0.8rem 1.2rem;
+    font-size: 1.1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    outline: none;
+    transition: var(--transition);
+}
+
+.search-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.btn {
+    padding: 0.8rem 1.5rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 999px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+/* Popular Keywords */
+.popular-keywords {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.keyword-tag {
+    display: inline-block;
+    background: #e0e7ff;
+    color: #3730a3;
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+    margin: 0.3rem;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.keyword-tag:hover {
+    background: #c7d2fe;
+    transform: scale(1.05);
+}
+
+/* Cards */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.result-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+}
+
+.result-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Type Colors */
+.type-技術報告 { background-color: var(--tech-bg); }
+.type-史政 { background-color: var(--history-bg); }
+.type-史政照片 { background-color: var(--photo-bg); }
+.type-逸光報 { background-color: var(--paper-bg); }
+
+.card-type {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    background: rgba(0,0,0,0.05);
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.card-meta {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.card-summary {
+    font-size: 0.95rem;
+    color: #475569;
+    flex-grow: 1;
+    margin-bottom: 1rem;
+}
+
+.card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: auto;
+}
+
+.btn-small {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    background: white;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+}
+
+.btn-small:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* Results Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 3rem;
+}
+
+.page-link {
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    color: var(--text-color);
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    transition: var(--transition);
+}
+
+.page-link:hover {
+    background: #f1f5f9;
+}
+
+.page-link.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Advanced Search Form */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+/* ============================================================
+   Anti-Purple Policy
+   Override any browser/Bootstrap default purple tones
+   (visited links, active states, indigo backgrounds, etc.)
+   Replace all with blue (#3b82f6) or neutral gray (#64748b).
+   ============================================================ */
+a:visited, 
+.visited-link {
+    color: #2563eb !important;          /* kill purple visited-link colour - Force Blue */
+}
+a:active,
+button:active {
+    color: #1d4ed8 !important;
+}
+/* Bootstrap / theme utilities that inject indigo/purple */
+.bg-primary, .btn-primary, .bg-indigo, .bg-purple { background-color: var(--primary-color) !important; border-color: var(--primary-color) !important; }
+.text-primary, .text-indigo, .text-purple         { color: var(--primary-color) !important; }
+.border-primary, .border-indigo, .border-purple   { border-color: var(--primary-color) !important; }
+.btn-outline-primary, .btn-outline-indigo         { color: var(--primary-color) !important; border-color: var(--primary-color) !important; }
+.btn-outline-primary:hover                        { background-color: var(--primary-color) !important; color: #fff !important; }
+/* keyword-tag originally uses indigo (#3730a3) – neutralise */
+.keyword-tag                                      { color: #1e40af !important; background: #e0f2fe !important; border-color: #3b82f6 !important; }
+.keyword-tag:hover                                { background: #dbeafe !important; color: #1d4ed8 !important; }
+
+/* ============================================================
+   Dynamic Themes (Task 4)
+   ============================================================ */
+.theme-yellow {
+    --primary-color: #f59e0b;
+    --primary-hover: #d97706;
+}
+.theme-yellow .detail-type-header {
+    background: #fef3c7 !important;
+    border-left: 5px solid #f59e0b !important;
+    color: #333333 !important;
+}
+.theme-yellow table {
+    border: 2px solid #f59e0b !important;
+}
+.theme-yellow th {
+    background: #fef9c3 !important;   /* Light yellow for headers */
+    color: #333333 !important;
+}
+.theme-yellow td {
+    color: #333333 !important;
+}
+
+/* ============================================================
+   Loading Overlay (Task 5 – prevent double-submit)
+   ============================================================ */
+#loading-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(3px);
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+#loading-overlay.is-active {
+    display: flex;
+}
+.loading-spinner {
+    width: 52px;
+    height: 52px;
+    border: 5px solid rgba(255,255,255,0.25);
+    border-top-color: #60a5fa;
+    border-radius: 50%;
+    animation: spin 0.85s linear infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+.loading-text {
+    color: #f8fafc;
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+
+/* ============================================================
+   Bookmark / My Library buttons
+   ============================================================ */
+.btn-bookmark {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.5rem 1.1rem;
+    background: #fff;
+    color: #f59e0b;
+    border: 2px solid #f59e0b;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+}
+.btn-bookmark:hover,
+.btn-bookmark.is-saved {
+    background: #f59e0b;
+    color: #fff;
+}
+.btn-danger-sm {
+    padding: 0.3rem 0.75rem;
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.btn-danger-sm:hover { background: #dc2626; }
+
+/* ============================================================
+   Saved Search dropdown
+   ============================================================ */
+.saved-search-dropdown {
+    position: relative;
+    display: inline-block;
+}
+.saved-search-dropdown summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 0.6rem 1rem;
+    background: #f1f5f9;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #334155;
+    user-select: none;
+}
+.saved-search-dropdown summary::-webkit-details-marker { display: none; }
+.saved-search-dropdown[open] summary { border-radius: 8px 8px 0 0; }
+.saved-search-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 240px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    z-index: 200;
+    padding: 0.4rem 0;
+}
+.saved-search-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    color: #334155;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.saved-search-item:hover { background: #f8fafc; }
+.saved-search-item span { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ============================================================
+   Detail page – 逸光報 Yellow Theme (Task 4)
+   Applied via data-type attribute on <main> wrapper.
+   ============================================================ */
+[data-detail-type="逸光報"] .detail-table th {
+    background: #fef9c3 !important;   /* light yellow */
+    color: #78350f !important;
+}
+[data-detail-type="逸光報"] .detail-table {
+    border: 2px solid #fbbf24 !important;
+}
+[data-detail-type="逸光報"] .detail-section-header {
+    background: #fbbf24;
+    color: #1c1917;
+}
+/* Other three types: clean neutral */
+[data-detail-type="技術報告"] .detail-type-header,
+[data-detail-type="史政"] .detail-type-header,
+[data-detail-type="史政照片"] .detail-type-header {
+    background: #f8fafc;
+    border-left: 4px solid var(--primary-color);
+    padding: 0.6rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    color: #334155;
+    font-weight: 600;
+}
+
+/* ============================================================
+   Admin Subnav Button Customisation (Task 7)
+   Background color: Light Gray (#f1f5f9)
+   Border color: Solid Black (#000000)
+   ============================================================ */
+.admin-subnav a {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    border: 1px solid #000000 !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    transition: var(--transition) !important;
+}
+.admin-subnav a:hover {
+    background-color: #e2e8f0 !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+.admin-subnav a.btn-primary,
+.admin-subnav a.active {
+    background-color: #cbd5e1 !important;
+    color: #0f172a !important;
+    border: 2px solid #000000 !important;
+    font-weight: bold !important;
+}

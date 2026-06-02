@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系統維護中</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            max-width: 500px;
+            width: 90%;
+        }
+        h1 {
+            color: #be123c;
+            margin-bottom: 1rem;
+            font-size: 2rem;
+        }
+        p {
+            color: #475569;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        .icon {
+            font-size: 4rem;
+            color: #fbbf24;
+            margin-bottom: 1rem;
+        }
+        .admin-login {
+            margin-top: 2rem;
+            display: inline-block;
+            font-size: 0.9rem;
+            color: #64748b;
+            text-decoration: none;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1rem;
+            width: 100%;
+        }
+        .admin-login:hover {
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🚧</div>
+        <h1>系統維護中</h1>
+        <p>目前系統正在進行例行性維護與升級作業，暫時停止服務。</p>
+        <p>為提供更好的服務品質，請稍候再試。造成您的不便，敬請見諒。</p>
+        
+        <a href="{{ url_for('auth.login') }}" class="admin-login">管理員登入通道</a>
+    </div>
+</body>
+</html>

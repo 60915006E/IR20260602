@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}系統後台 - 系統稽核日誌{% endblock %}
+
+{% block content %}
+<div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 900px; margin: 2rem auto;">
+    
+    {# ── 橫向子導覽列 ── #}
+    <div class="admin-subnav" style="display: flex; gap: 10px; border-bottom: 2px solid var(--border-color); padding-bottom: 12px; margin-bottom: 2rem; flex-wrap: wrap;">
+        <a href="{{ url_for('admin.field_settings') }}" class="btn btn-sm btn-outline-secondary">前台顯示欄位控制</a>
+        <a href="{{ url_for('admin.oracle_fields_settings') }}" class="btn btn-sm btn-outline-secondary">Oracle 核心欄位配置</a>
+        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-sm btn-outline-secondary">使用者管理</a>
+        <a href="{{ url_for('search.theme_admin') }}" class="btn btn-sm btn-outline-secondary">主題館修改</a>
+        <a href="{{ url_for('admin.system_settings') }}" class="btn btn-sm btn-outline-secondary">系統組態設定</a>
+        <a href="{{ url_for('admin.audit_logs_view') }}" class="btn btn-sm btn-primary">系統稽核日誌</a>
+        <a href="{{ url_for('admin.system_health') }}" class="btn btn-sm btn-outline-secondary">系統健康度檢查</a>
+        <button id="adminDarkModeBtn" class="btn btn-sm btn-outline-secondary" style="margin-left: auto;">切換黑暗模式</button>
+    </div>
+
+    <h2 style="color: var(--primary-color); margin-bottom: 1rem; font-weight: 700;">系統稽核日誌查詢</h2>
+    <p style="color: #64748b; margin-bottom: 1.5rem;">管理員專屬日誌面板：在此可追蹤同仁與管理者的所有系統級操作，包含登入、搜尋、主題異動以及越權下載攔截防禦等紀錄。</p>
+
+    <form method="GET" action="{{ url_for('admin.audit_logs_view') }}" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+        <input type="text" name="user" class="search-input" placeholder="過濾使用者 ID..." value="{{ q_user }}" style="flex: 1; min-width: 150px; font-size: 0.95rem; padding: 0.5rem 1rem; border-radius: 8px;">
+        <input type="date" name="date" class="search-input" value="{{ q_date }}" style="font-size: 0.95rem; padding: 0.5rem 1rem; border-radius: 8px;">
+        <button type="submit" class="btn" style="padding: 0.5rem 1.5rem; border-radius: 8px;">篩選日誌</button>
+        {% if q_user or q_date %}
+        <a href="{{ url_for('admin.audit_logs_view') }}" class="btn" style="background-color: #64748b; padding: 0.5rem 1.5rem; border-radius: 8px;">清除過濾</a>
+        {% endif %}
+    </form>
+
+    <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 1.5rem;">
+        <div style="max-height: 500px; overflow-y: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 0.85rem;">
+                <thead>
+                    <tr style="background-color: #cbd5e1; color: #1e293b;">
+                        <th style="padding: 10px; border-bottom: 2px solid #94a3b8; text-align: left;">日誌紀錄明細</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr style="border-bottom: 1px solid #e2e8f0; background: white;">
+                        <td style="padding: 10px; white-space: pre-wrap; word-break: break-all; color: #334155;">{{ log }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td style="padding: 20px; text-align: center; color: #64748b; background: white;">目前無任何符合的日誌稽核紀錄。</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

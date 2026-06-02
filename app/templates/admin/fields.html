@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}系統後台 - 前台顯示欄位控制{% endblock %}
+
+{% block content %}
+<div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 900px; margin: 2rem auto;">
+    
+    {# ── 橫向子導覽列 ── #}
+    <div class="admin-subnav" style="display: flex; gap: 10px; border-bottom: 2px solid var(--border-color); padding-bottom: 12px; margin-bottom: 2rem; flex-wrap: wrap;">
+        <a href="{{ url_for('admin.field_settings') }}" class="btn btn-sm btn-primary">前台顯示欄位控制</a>
+        <a href="{{ url_for('admin.oracle_fields_settings') }}" class="btn btn-sm btn-outline-secondary">Oracle 核心欄位配置</a>
+        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-sm btn-outline-secondary">使用者管理</a>
+        <a href="{{ url_for('search.theme_admin') }}" class="btn btn-sm btn-outline-secondary">主題館修改</a>
+        <a href="{{ url_for('admin.system_settings') }}" class="btn btn-sm btn-outline-secondary">系統組態設定</a>
+        <a href="{{ url_for('admin.audit_logs_view') }}" class="btn btn-sm btn-outline-secondary">系統稽核日誌</a>
+        <a href="{{ url_for('admin.system_health') }}" class="btn btn-sm btn-outline-secondary">系統健康度檢查</a>
+        <button id="adminDarkModeBtn" class="btn btn-sm btn-outline-secondary" style="margin-left: auto;">切換黑暗模式</button>
+    </div>
+
+    <h2 style="color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">前台顯示欄位控制</h2>
+    <p style="color: #64748b; margin-bottom: 2rem;">系統管理者面板：為防止 API 超額給定資料（防範資料曝露越權），在此關閉的欄位將不會被渲染在快取清單與細項中。</p>
+    
+    {% if msg %}
+    <div style="background: #ecfdf5; color: #047857; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid #10b981;">
+        {{ msg }}
+    </div>
+    {% endif %}
+
+    <form method="POST">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem; text-align: left;">
+            <thead>
+                <tr style="background: #f8fafc;">
+                    <th style="padding: 1rem; border-bottom: 1px solid var(--border-color);">資料分類</th>
+                    <th style="padding: 1rem; border-bottom: 1px solid var(--border-color);">真實欄位</th>
+                    <th style="padding: 1rem; border-bottom: 1px solid var(--border-color);">前台標籤</th>
+                    <th style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center;">簡目頁顯示欄位</th>
+                    <th style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center;">詳目頁顯示欄位</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in fields %}
+                <tr>
+                    <td style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                        <span class="card-type type-{{ f.DATA_TYPE }}">{{ f.DATA_TYPE }}</span>
+                    </td>
+                    <td style="padding: 1rem; border-bottom: 1px solid var(--border-color); font-family: monospace; color: #475569;">{{ f.FIELD_NAME }}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                        <input type="text" name="label_{{ f.CONFIG_ID }}" value="{{ f.FIELD_LABEL }}" class="form-control" style="width: 100%; max-width: 180px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px;">
+                    </td>
+                    <td style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center;">
+                        <input type="checkbox" name="list_{{ f.CONFIG_ID }}" {% if f.SHOW_IN_LIST == 'Y' %}checked{% endif %} style="transform: scale(1.5);">
+                    </td>
+                    <td style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center;">
+                        <input type="checkbox" name="detail_{{ f.CONFIG_ID }}" {% if f.SHOW_IN_DETAIL == 'Y' %}checked{% endif %} style="transform: scale(1.5);">
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="padding: 2rem; text-align: center; color: #94a3b8;">請先透過系統管理員於 SYSTEM_DB 中載入 TBL_FIELD_CONFIG 初始化表單。</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+            <a href="{{ url_for('search.index') }}" class="btn" style="background: white; color: var(--text-color); border: 1px solid var(--border-color);">返回前台</a>
+            <button class="btn" type="submit">套用資安變更</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

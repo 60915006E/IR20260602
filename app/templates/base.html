@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}機構典藏系統{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% if (session.get('role') or '')|lower == 'admin' %}
+    <style>
+    /* 系統管理員專屬高質感 HSL 藍黑科技暗色主題覆蓋 */
+    body.admin-dark-mode {
+        --bg-color: #0f172a !important;
+        --text-color: #e2e8f0 !important;
+        --card-bg: #1e293b !important;
+        --border-color: #334155 !important;
+        background-color: #0f172a !important;
+        color: #e2e8f0 !important;
+    }
+    body.admin-dark-mode header {
+        background-color: #1e293b !important;
+        border-bottom: 1px solid #334155 !important;
+    }
+    body.admin-dark-mode .nav-links a {
+        color: #e2e8f0 !important;
+    }
+    body.admin-dark-mode .nav-links a:hover {
+        color: #60a5fa !important;
+    }
+    /* 覆蓋後台行內樣式之白色與亮灰色背景 */
+    body.admin-dark-mode div[style*="background: white"],
+    body.admin-dark-mode div[style*="background:white"],
+    body.admin-dark-mode div[style*="background: #fff"],
+    body.admin-dark-mode div[style*="background:#fff"],
+    body.admin-dark-mode div[style*="background: #ffffff"],
+    body.admin-dark-mode div[style*="background:#ffffff"] {
+        background: #1e293b !important;
+        background-color: #1e293b !important;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5) !important;
+    }
+    body.admin-dark-mode div[style*="background-color: white"],
+    body.admin-dark-mode div[style*="background-color:white"],
+    body.admin-dark-mode div[style*="background-color: #ffffff"],
+    body.admin-dark-mode div[style*="background-color:#ffffff"] {
+        background-color: #1e293b !important;
+    }
+    /* 覆蓋後台表格、欄位背景與框線 */
+    body.admin-dark-mode table,
+    body.admin-dark-mode tr,
+    body.admin-dark-mode th,
+    body.admin-dark-mode td {
+        border-color: #334155 !important;
+    }
+    body.admin-dark-mode th[style*="background: #f8fafc"],
+    body.admin-dark-mode th[style*="background:#f8fafc"],
+    body.admin-dark-mode tr[style*="background: #f8fafc"],
+    body.admin-dark-mode tr[style*="background:#f8fafc"],
+    body.admin-dark-mode td[style*="background: #f8fafc"],
+    body.admin-dark-mode td[style*="background:#f8fafc"] {
+        background: #0f172a !important;
+        background-color: #0f172a !important;
+        color: #cbd5e1 !important;
+    }
+    body.admin-dark-mode tr[style*="background: #f8fafc"] th,
+    body.admin-dark-mode tr[style*="background:#f8fafc"] th {
+        background: #0f172a !important;
+        background-color: #0f172a !important;
+        color: #cbd5e1 !important;
+    }
+    /* 覆蓋標題與標籤文字 */
+    body.admin-dark-mode h2,
+    body.admin-dark-mode h3,
+    body.admin-dark-mode h4,
+    body.admin-dark-mode label,
+    body.admin-dark-mode strong {
+        color: #f8fafc !important;
+    }
+    body.admin-dark-mode p,
+    body.admin-dark-mode span,
+    body.admin-dark-mode small {
+        color: #cbd5e1 !important;
+    }
+    body.admin-dark-mode .text-muted,
+    body.admin-dark-mode p[style*="color: #64748b"],
+    body.admin-dark-mode p[style*="color:#64748b"] {
+        color: #94a3b8 !important;
+    }
+    /* 覆蓋輸入框、下拉式選單與文字區域 */
+    body.admin-dark-mode input[type="text"],
+    body.admin-dark-mode input[type="password"],
+    body.admin-dark-mode select,
+    body.admin-dark-mode textarea {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+        border: 1px solid #334155 !important;
+    }
+    body.admin-dark-mode input[readonly] {
+        background-color: #1e293b !important;
+        color: #94a3b8 !important;
+    }
+    /* 覆蓋後台按鈕及導覽列 */
+    body.admin-dark-mode .btn-outline-secondary {
+        border-color: #475569 !important;
+        color: #cbd5e1 !important;
+    }
+    body.admin-dark-mode .btn-outline-secondary:hover {
+        background-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+    body.admin-dark-mode .admin-subnav {
+        border-bottom-color: #334155 !important;
+    }
+    body.admin-dark-mode .admin-subnav a.btn-outline-secondary {
+        border-color: #475569 !important;
+        color: #cbd5e1 !important;
+    }
+    body.admin-dark-mode .admin-subnav a.btn-outline-secondary:hover {
+        background-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+    body.admin-dark-mode .admin-subnav a.btn-primary {
+        background-color: #2563eb !important;
+        border-color: #2563eb !important;
+    }
+    /* 覆蓋行內顏色與框線的特定樣式 */
+    body.admin-dark-mode [style*="color: #64748b"],
+    body.admin-dark-mode [style*="color:#64748b"] {
+        color: #94a3b8 !important;
+    }
+    body.admin-dark-mode [style*="color: #475569"],
+    body.admin-dark-mode [style*="color:#475569"] {
+        color: #cbd5e1 !important;
+    }
+    body.admin-dark-mode [style*="border-bottom: 2px solid var(--border-color)"] {
+        border-bottom-color: #334155 !important;
+    }
+    body.admin-dark-mode [style*="border: 1px solid #10b981"] {
+        border-color: #047857 !important;
+    }
+    body.admin-dark-mode [style*="background: #ecfdf5"] {
+        background-color: #064e3b !important;
+        color: #a7f3d0 !important;
+    }
+    body.admin-dark-mode [style*="background:#ecfdf5"] {
+        background-color: #064e3b !important;
+        color: #a7f3d0 !important;
+    }
+    </style>
+    <script>
+    /* 立即讀取 localStorage 狀態，防止亮白屏閃爍 */
+    (function () {
+        var isDark = localStorage.getItem('admin_dark_mode') === 'true';
+        if (isDark) {
+            document.documentElement.classList.add('admin-dark-mode');
+            document.addEventListener('DOMContentLoaded', function() {
+                document.body.classList.add('admin-dark-mode');
+            });
+        }
+    })();
+    </script>
+    {% endif %}
+</head>
+<body class="theme-{{ portal_config.system_theme or 'light' }}">
+
+    {# ── Task 5: 全螢幕等待 Overlay（隱藏預設） ── #}
+    <div id="loading-overlay" role="status" aria-label="搜尋處理中">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">搜尋中，請耐心等候...</p>
+    </div>
+
+    <header>
+        <a href="{{ url_for('search.index') }}" class="logo" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" style="height: 40px; width: auto;">
+            <span>機構典藏系統</span>
+        </a>
+        <div class="nav-links">
+            <a href="{{ url_for('search.index') }}">首頁</a>
+            <a href="{{ portal_config.add_book_url }}" target="_blank" style="color: #2563eb; font-weight: bold;"><i class="bi bi-journal-plus"></i> 新增書目</a>
+            <a href="{{ url_for('search.advanced_search') }}">進階查詢</a>
+            <a href="{{ url_for('search.browse') }}">分類瀏覽</a>
+            {% if session.get('user_id') %}
+            <a href="{{ url_for('search.my_library') }}" style="color: #d97706; font-weight: bold;"><i class="bi bi-book-half"></i> 我的書房</a>
+            {% endif %}
+            {% if (session.get('role') or '')|lower == 'admin' %}
+            <a href="{{ url_for('admin.field_settings') }}" style="color: #ef4444; font-weight: bold;"><i class="bi bi-shield-lock"></i> 管理介面</a>
+            {% endif %}
+            {% if (session.get('role') or '')|lower in ['admin', 'topicadmin'] %}
+            <a href="{{ url_for('search.theme_admin') }}" style="color: #10b981; font-weight: bold;"><i class="bi bi-pencil-square"></i> 主題館修改</a>
+            {% endif %}
+            {% if session.get('user_id') %}
+            <span style="color: #94a3b8; font-size: 0.85rem; margin-left: 12px; margin-right: 2px;">目前使用者：</span>
+            <span style="color: #94a3b8; font-weight: bold; margin-right: 12px;"><i class="bi bi-person-circle"></i> {{ session.get('username', session.get('user_id')) }}</span>
+            <a href="{{ url_for('auth.logout') }}" style="color: #64748b;">登出</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="container">
+        {# Flash messages #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div style="margin-bottom: 1rem;">
+                {% for category, message in messages %}
+                <div style="padding: 0.8rem 1.2rem; border-radius: 8px; margin-bottom: 0.5rem;
+                     background: {% if category == 'warning' %}#fef3c7{% elif category == 'error' or category == 'danger' %}#fee2e2{% else %}#dcfce7{% endif %};
+                     color: {% if category == 'warning' %}#92400e{% elif category == 'error' or category == 'danger' %}#991b1b{% else %}#166534{% endif %};
+                     border: 1px solid {% if category == 'warning' %}#fcd34d{% elif category == 'error' or category == 'danger' %}#fca5a5{% else %}#86efac{% endif %};">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    {# ── Task 5: Loading Overlay JS – attach to ALL search forms ── #}
+    <script>
+    (function () {
+        'use strict';
+        var overlay = document.getElementById('loading-overlay');
+
+        function showOverlay(form) {
+            // Disable all submit buttons in the form to prevent double-click
+            var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+            buttons.forEach(function (btn) {
+                btn.disabled = true;
+                if (btn.tagName === 'BUTTON') {
+                    btn.dataset.originalText = btn.innerHTML;
+                    btn.innerHTML = '搜尋中...';
+                }
+            });
+            overlay.classList.add('is-active');
+        }
+
+        // Selectors that identify search forms across all pages
+        var SEARCH_FORM_SELECTORS = [
+            'form[action*="/search"]',
+            'form[action*="/advanced"]',
+            'form[action*="/browse"]',
+            'form#search-form',
+            '.search-container form',
+        ];
+
+        function attachToForms() {
+            document.querySelectorAll('.search-form').forEach(function (form) {
+                form.addEventListener('submit', function (e) {
+                    // Skip export / admin forms (they trigger file download, no page nav)
+                    if (form.dataset.noOverlay === 'true') return;
+                    showOverlay(form);
+                });
+            });
+        }
+
+        // Run after DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', attachToForms);
+        } else {
+            attachToForms();
+        }
+
+        // Also hide the overlay when the browser's back/forward cache restores the page
+        window.addEventListener('pageshow', function (ev) {
+            if (ev.persisted) {
+                overlay.classList.remove('is-active');
+                document.querySelectorAll('button[type="submit"]').forEach(function (btn) {
+                    btn.disabled = false;
+                    if (btn.dataset.originalText) {
+                        btn.innerHTML = btn.dataset.originalText;
+                    }
+                });
+            }
+        });
+    })();
+    </script>
+
+    {% if (session.get('role') or '')|lower == 'admin' %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var btn = document.getElementById('adminDarkModeBtn');
+        if (btn) {
+            // 設定初始文字
+            var isDark = localStorage.getItem('admin_dark_mode') === 'true';
+            btn.textContent = isDark ? '切換亮色模式' : '切換黑暗模式';
+            
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                var currentlyDark = document.body.classList.contains('admin-dark-mode');
+                if (currentlyDark) {
+                    document.body.classList.remove('admin-dark-mode');
+                    document.documentElement.classList.remove('admin-dark-mode');
+                    localStorage.setItem('admin_dark_mode', 'false');
+                    btn.textContent = '切換黑暗模式';
+                } else {
+                    document.body.classList.add('admin-dark-mode');
+                    document.documentElement.classList.add('admin-dark-mode');
+                    localStorage.setItem('admin_dark_mode', 'true');
+                    btn.textContent = '切換亮色模式';
+                }
+            });
+        }
+    });
+    </script>
+    {% endif %}
+</body>
+</html>
+

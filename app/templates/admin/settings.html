@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}系統後台 - 系統組態設定{% endblock %}
+
+{% block content %}
+<div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 900px; margin: 2rem auto;">
+    
+    {# ── 橫向子導覽列 ── #}
+    <div class="admin-subnav" style="display: flex; gap: 10px; border-bottom: 2px solid var(--border-color); padding-bottom: 12px; margin-bottom: 2rem; flex-wrap: wrap;">
+        <a href="{{ url_for('admin.field_settings') }}" class="btn btn-sm btn-outline-secondary">前台顯示欄位控制</a>
+        <a href="{{ url_for('admin.oracle_fields_settings') }}" class="btn btn-sm btn-outline-secondary">Oracle 核心欄位配置</a>
+        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-sm btn-outline-secondary">使用者管理</a>
+        <a href="{{ url_for('search.theme_admin') }}" class="btn btn-sm btn-outline-secondary">主題館修改</a>
+        <a href="{{ url_for('admin.system_settings') }}" class="btn btn-sm btn-primary">系統組態設定</a>
+        <a href="{{ url_for('admin.audit_logs_view') }}" class="btn btn-sm btn-outline-secondary">系統稽核日誌</a>
+        <a href="{{ url_for('admin.system_health') }}" class="btn btn-sm btn-outline-secondary">系統健康度檢查</a>
+        <button id="adminDarkModeBtn" class="btn btn-sm btn-outline-secondary" style="margin-left: auto;">切換黑暗模式</button>
+    </div>
+
+    <h2 style="color: var(--primary-color); padding-bottom: 0.5rem; margin-bottom: 1.5rem; font-weight: 700;">系統基本組態設定</h2>
+    <p style="color: #64748b; margin-bottom: 2rem;">系統管理面板：在此配置全站的使用者認證機制、前台「等級修改說明」自訂公告、以及相關的外接 API 與搜尋引擎模式切換。</p>
+    
+    {% if msg %}
+    <div style="background: #ecfdf5; color: #047857; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid #10b981; font-weight: 600;">
+        {{ msg }}
+    </div>
+    {% endif %}
+
+    <form method="POST">
+        
+        {# ── 卡片區塊 1: 認證與登入機制 ── #}
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+            <h4 style="color: #1e293b; margin-top: 0; margin-bottom: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                <i class="bi bi-shield-lock"></i> 認證與登入機制設定
+            </h4>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-weight: 600; color: #334155; margin-bottom: 0.5rem;">全站登入模式選擇：</label>
+                <select name="auth_mode" class="form-control" style="max-width: 350px;">
+                    <option value="password" {% if config.get('auth_mode', 'password') == 'password' %}selected{% endif %}>手動帳號密碼登入 (內部防護測試)</option>
+                    <option value="smartcard" {% if config.get('auth_mode') == 'smartcard' %}selected{% endif %}>憑證卡單一登入 (OAuth 2.0 / SSO)</option>
+                </select>
+                <small style="color: #64748b; display: block; margin-top: 0.5rem;">選擇憑證卡單一登入模式後，一般同仁將會被自動重導向至公司的單一登入閘道 (SSO)。若需進行維護，可透過特殊路由進行帳密登入。</small>
+            </div>
+            
+            <div style="margin-top: 1.5rem; border-top: 1px dashed #cbd5e1; padding-top: 1.5rem;">
+                <label style="display: block; font-weight: 600; color: #334155; margin-bottom: 0.5rem;">核心欄位變更二階段安全密碼（高權限防護）：</label>
+                <input type="password" name="fields_sec_key" class="form-control" style="max-width: 350px;" placeholder="輸入新密碼以進行更新或重設">
+                <small style="color: #64748b; display: block; margin-top: 0.5rem;">設定此密碼後，管理者在「動態查詢欄位配置」進行新增、刪除或修改任何核心查詢欄位時，必須輸入此二階段密碼進行二次身分核驗，杜絕階段劫持竄改。</small>
+            </div>
+            
+            <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 1rem;">
+                <h5 style="color: #b45309; margin-top: 0; margin-bottom: 0.5rem; font-weight: 600;">🔗 憑證卡單一登入 (OAuth 2.0 / SSO) 參數配置</h5>
+                <p style="color: #b45309; font-size: 0.85rem; margin-bottom: 1rem;">本系統使用 OAuth 2.0 與公司內部的中華電信認證伺服器對接。以下終端點 (Endpoints) 在公司網路內部必須能正常連通。</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">SSO Client ID：</label>
+                        <input type="text" name="sso_client_id" value="{{ config.get('sso_client_id', '') }}" class="form-control" placeholder="例如: client_ir_system">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">SSO Client Secret：</label>
+                        <input type="password" name="sso_client_secret" value="{{ config.get('sso_client_secret', '') }}" class="form-control" placeholder="內部加密金鑰">
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">SSO 認證重導向終端點 (Authorization URL)：</label>
+                    <input type="text" name="sso_auth_url" value="{{ config.get('sso_auth_url', '') }}" class="form-control" placeholder="例如: https://sso.company.com/oauth/authorize">
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">SSO 金鑰交換終端點 (Token URL)：</label>
+                        <input type="text" name="sso_token_url" value="{{ config.get('sso_token_url', '') }}" class="form-control" placeholder="例如: https://sso.company.com/oauth/token">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">SSO 使用者資訊終端點 (User Info URL)：</label>
+                        <input type="text" name="sso_user_info_url" value="{{ config.get('sso_user_info_url', '') }}" class="form-control" placeholder="例如: https://sso.company.com/oauth/userinfo">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ── 卡片區塊 2: 技術報告等級修改說明 ── #}
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+            <h4 style="color: #166534; margin-top: 0; margin-bottom: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                <i class="bi bi-file-earmark-text"></i> 技術報告「等級修改說明」公告配置
+            </h4>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; color: #14532d; margin-bottom: 0.5rem;">公告說明文字：</label>
+                <textarea name="level_change_desc" class="form-control" rows="4" placeholder="請在此輸入當技術報告有等級證明變更時，需要動態展現於下載按鈕上方的公告說明..." style="resize: vertical; font-family: sans-serif; font-size: 0.95rem;">{{ config.get('level_change_desc', '') }}</textarea>
+                <small style="color: #166534; display: block; margin-top: 0.5rem; font-size: 0.85rem;">
+                    💡 <b>機制說明：</b>當前台讀者瀏覽某篇「技術報告」的詳目資訊時，系統會自動比對 Oracle 中的 <b>VI_IRLIB_RP_PROVEDATA</b> 等級證明關聯表。若該報告存在證明資料，系統將會在下載檔案按鈕上方，即時展示您於此處所設定的公告文字。若無證明資料，該區塊將自動隱藏，確保資料呈現精準性。
+                </small>
+            </div>
+        </div>
+
+        {# ── 卡片區塊 3: 全站搜尋與跳轉設定 ── #}
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+            <h4 style="color: #1e293b; margin-top: 0; margin-bottom: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                <i class="bi bi-gear-wide-connected"></i> 全站檢索模式與跳轉設定
+            </h4>
+            
+            <div style="margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <div>
+                    <label style="display: block; font-weight: 600; color: #334155; margin-bottom: 0.5rem;">預設搜尋檢索模式：</label>
+                    <select name="search_mode" class="form-control">
+                        <option value="cache" {% if config.get('search_mode', 'cache') == 'cache' %}selected{% endif %}>本地 WAL SQLite 高併發快取模式 (預設，推薦)</option>
+                        <option value="oracle" {% if config.get('search_mode') == 'oracle' %}selected{% endif %}>直連 Oracle 19c 資料庫模式 (即時，負載較高)</option>
+                    </select>
+                    <small style="color: #64748b; display: block; margin-top: 0.5rem;">快取模式將指向獨立的本地 SQLite 快取庫，由背景任務每 3 分鐘增量更新，支援 100-500 人高併發讀寫而不發生 Database Locked 鎖庫異常。</small>
+                </div>
+                <div>
+                    <label style="display: block; font-weight: 600; color: #334155; margin-bottom: 0.5rem;">「新增書目」超連結網址：</label>
+                    <input type="text" name="add_book_url" value="{{ config.get('add_book_url', 'https://www.test.com.tw') }}" class="form-control" placeholder="https://www.test.com.tw">
+                    <small style="color: #64748b; display: block; margin-top: 0.5rem;">此網址將會被動態套用至導覽列的「新增書目」超連結，提供跨機關或新平台無縫導航。</small>
+                </div>
+            </div>
+            <div style="margin-top: 1.5rem; border-top: 1px dashed #cbd5e1; padding-top: 1.5rem;">
+                <label style="display: block; font-weight: 600; color: #334155; margin-bottom: 0.5rem;">熱門搜尋黑名單 (以逗號或換行分隔)：</label>
+                <textarea name="search_blacklist" class="form-control" rows="3" placeholder="例如: 測試, test, 密碼" style="resize: vertical; font-family: sans-serif; font-size: 0.95rem;">{{ config.get('search_blacklist', '') }}</textarea>
+                <small style="color: #64748b; display: block; margin-top: 0.5rem;">在此設定的關鍵字，將不會出現在前台首頁「近期熱門搜尋」以及搜尋列的自動推薦 (autocomplete) 中。</small>
+            </div>
+        </div>
+
+        {# ── 送出與操作按鈕 ── #}
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; border-top: 2px solid var(--border-color); padding-top: 1.5rem;">
+            <a href="{{ url_for('search.index') }}" class="btn" style="background: white; color: var(--text-color); border: 1px solid var(--border-color);">返回前台首頁</a>
+            <button class="btn" type="submit" style="background-color: var(--primary-color); color: white; border: none; font-weight: 600; padding: 0.75rem 2rem; border-radius: 6px; cursor: pointer;">儲存系統組態設定</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

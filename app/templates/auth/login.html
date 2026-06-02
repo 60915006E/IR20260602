@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安全登入閘道 - 機構典藏系統</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .login-container { 
+            max-width: 400px; 
+            margin: 10rem auto; 
+            padding: 2.5rem 2rem; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); 
+        }
+        .error-msg { 
+            color: #dc2626; 
+            background: #ffe4e6; 
+            border: 1px solid #fecdd3;
+            padding: 0.8rem; 
+            border-radius: 6px; 
+            margin-bottom: 1.5rem; 
+            font-size: 0.95rem;
+        }
+        body.theme-dark {
+            background-color: #0f172a;
+        }
+        body.theme-dark .login-container {
+            background-color: #1e293b;
+            color: #f8fafc;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
+        }
+        body.theme-dark .login-container h2 {
+            color: #60a5fa !important;
+        }
+        body.theme-dark .form-label {
+            color: #cbd5e1;
+        }
+        body.theme-dark .form-control {
+            background-color: #0f172a;
+            border-color: #334155;
+            color: white;
+        }
+    </style>
+</head>
+<body class="theme-{{ portal_config.system_theme or 'light' }}">
+    <div class="login-container">
+        <h2 style="text-align: center; color: var(--primary-color); margin-bottom: 2rem;">內部人員關鍵字查詢閘門</h2>
+        
+        {% if error %}
+        <div class="error-msg">⚠️ {{ error }}</div>
+        {% endif %}
+        
+        <form method="POST">
+            <div class="form-group">
+                <label class="form-label" for="username">人員識別帳號</label>
+                <input type="text" id="username" name="username" class="form-control" required autocomplete="off" placeholder="例如: admin">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="password">安全憑證密碼</label>
+                <input type="password" id="password" name="password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn" style="width: 100%; margin-top: 1.5rem; letter-spacing: 2px;">登入系統</button>
+        </form>
+    </div>
+</body>
+</html>

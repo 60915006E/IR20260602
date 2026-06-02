@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}系統後台 - 系統健康監控{% endblock %}
+
+{% block content %}
+<div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 900px; margin: 2rem auto;">
+    
+    {# ── 橫向子導覽列 ── #}
+    <div class="admin-subnav" style="display: flex; gap: 10px; border-bottom: 2px solid var(--border-color); padding-bottom: 12px; margin-bottom: 2rem; flex-wrap: wrap;">
+        <a href="{{ url_for('admin.field_settings') }}" class="btn btn-sm btn-outline-secondary">前台顯示欄位控制</a>
+        <a href="{{ url_for('admin.oracle_fields_settings') }}" class="btn btn-sm btn-outline-secondary">Oracle 核心欄位配置</a>
+        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-sm btn-outline-secondary">使用者管理</a>
+        <a href="{{ url_for('search.theme_admin') }}" class="btn btn-sm btn-outline-secondary">主題館修改</a>
+        <a href="{{ url_for('admin.system_settings') }}" class="btn btn-sm btn-outline-secondary">系統組態設定</a>
+        <a href="{{ url_for('admin.audit_logs_view') }}" class="btn btn-sm btn-outline-secondary">系統稽核日誌</a>
+        <a href="{{ url_for('admin.system_health') }}" class="btn btn-sm btn-primary">系統健康度檢查</a>
+        <button id="adminDarkModeBtn" class="btn btn-sm btn-outline-secondary" style="margin-left: auto;">切換黑暗模式</button>
+    </div>
+
+    <h2 style="color: var(--primary-color); margin-bottom: 0.5rem; font-weight: 700;"><i class="bi bi-activity"></i> 系統健康監控儀表板</h2>
+    <p style="color: #64748b; margin-bottom: 2rem;">系統監控面板：即時確認外部 Oracle 19c 與本地 SQLite 高併發快取庫之連線與同步狀態，並檢視近期同仁熱門搜尋行為。</p>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 8px;">
+            <h4 style="color: #475569; margin-top: 0; font-weight: 600; font-size: 1.1rem;">DATA_DB (唯讀外部 Oracle) 連線狀態</h4>
+            <p style="font-size: 1.6rem; color: {% if data_db_status == 'OK' %}#16a34a{% else %}#dc2626{% endif %}; font-weight: bold; margin: 10px 0;">
+                ● {{ data_db_status }}
+            </p>
+            <small style="color: #64748b;">連線狀態為 OK 代表系統能正常透過 Thin Mode 直連外部資料庫。</small>
+        </div>
+        
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.5rem; border-radius: 8px;">
+            <h4 style="color: #475569; margin-top: 0; font-weight: 600; font-size: 1.1rem;">GLOBAL_SEARCH_INDEX 快取狀態</h4>
+            <p style="margin: 5px 0; font-size: 0.95rem; color: #334155;">目前快取總數：<strong style="font-size: 1.3rem; color: #0284c7;">{{ idx_count }}</strong> 筆</p>
+            <p style="margin: 5px 0; font-size: 0.95rem; color: #334155;">最後增量同步：<strong>{{ last_sync }}</strong></p>
+            <small style="color: #64748b;">快取層使用 SQLite WAL 高併發讀寫模式，每 3 分鐘增量更新。</small>
+        </div>
+    </div>
+    
+    <h4 style="color: #1e293b; margin-top: 2rem; margin-bottom: 1rem; font-weight: 600;">最近 10 筆搜尋紀錄</h4>
+    <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+            <thead style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1;">
+                <tr>
+                    <th style="padding: 12px; font-weight: 600; color: #1e293b;">使用者 ID</th>
+                    <th style="padding: 12px; font-weight: 600; color: #1e293b;">搜尋關鍵字</th>
+                    <th style="padding: 12px; font-weight: 600; color: #1e293b;">搜尋時間</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in recent_searches %}
+                <tr style="border-bottom: 1px solid #e2e8f0; background: white;">
+                    <td style="padding: 12px; font-family: monospace; color: #0284c7;">{{ r.USER_ID }}</td>
+                    <td style="padding: 12px; font-weight: 500; color: #334155;">{{ r.KEYWORD }}</td>
+                    <td style="padding: 12px; color: #64748b;">{{ r.CREATED_AT or r.SEARCH_TIME or '剛剛' }}</td>
+                </tr>
+                {% else %}
+                <tr style="background: white;"><td colspan="3" style="text-align: center; padding: 2rem; color: #94a3b8;">目前暫無任何檢索快取紀錄。</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

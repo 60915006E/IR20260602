@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto; background: var(--card-bg); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+    <h2 style="margin-bottom: 1.5rem; color: var(--primary-color);">進階關鍵字查詢</h2>
+    <p style="color: #64748b; margin-bottom: 2rem;">您可在此處針對特定欄位進行縮小範圍的過濾搜尋，目前由於關鍵字查詢整合，所有實體欄位檢索轉換為字詞聯集比對。</p>
+    
+    <form action="{{ url_for('search.do_search') }}" method="GET">
+        <div class="form-group">
+            <label class="form-label" for="q_main">主要檢索關鍵字：</label>
+            <input type="text" id="q_main" name="q" class="form-control" placeholder="請輸入您想查找的核心詞彙...">
+        </div>
+        
+        <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <label class="form-label" for="q_year">指定年度：</label>
+                <!-- 利用前端組合，讓結果一併作為網址條件送出 -->
+                <input type="text" id="q_year" class="form-control" placeholder="例如: 112">
+            </div>
+            <div>
+                <label class="form-label" for="q_dept">指定部門/人員：</label>
+                <input type="text" id="q_dept" class="form-control" placeholder="例如: 資工處">
+            </div>
+        </div>
+
+        <button type="submit" class="btn" style="width: 100%; margin-top: 1rem; font-size: 1.1rem;" onclick="combineQuery()">執行進階查詢</button>
+    </form>
+</div>
+
+<script>
+function combineQuery() {
+    // 簡單的客戶端邏輯，將年度與部門名稱一併串接到檢索欄位中
+    // 由於後端採用單一 SEARCH_TEXT 全文欄位快取策略
+    const main = document.getElementById('q_main').value;
+    const year = document.getElementById('q_year').value;
+    const dept = document.getElementById('q_dept').value;
+    
+    let combined = main;
+    if (year) combined += " " + year;
+    if (dept) combined += " " + dept;
+    
+    document.getElementById('q_main').value = combined.trim();
+}
+</script>
+{% endblock %}

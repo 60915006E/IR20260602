@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block content %}
+{# Apply data-detail-type and theme-yellow class (Task 4) #}
+<div data-detail-type="{{ record.get('DATA_TYPE', '') }}" 
+     class="{% if record.get('DATA_TYPE') == '逸光報' %}theme-yellow{% endif %}">
+
+<div class="detail-type-header">{{ record.get('DATA_TYPE', '書目') }} 詳細資料</div>
+
+{# ──────────────────────────────────────────────────────────────
+   Section 1: 通用欄位（由 portal_config.detail_fields 控制）
+   ────────────────────────────────────────────────────────────── #}
+<table style="max-width: 700px; margin-bottom: 20px; text-align: left; border-collapse: collapse; width: 100%; border: 1px solid #e2e8f0;">
+    {% for field_item in get_dynamic_fields_with_labels(record.DATA_TYPE, True) %}
+        {% set field = field_item.FIELD_NAME %}
+        {% set label = field_item.FIELD_LABEL %}
+        {% set val = record.get(field) %}
+        {% if not val %}
+            {# 各種欄位命名 fallback 相容 #}
+            {% if field == 'OVC_YEAR' or field == 'YEAR' %}
+                {% set val = record.get('OVC_YEAR') or record.get('OVC_PROMOTE_YEAR') or record.get('OVC_HS_PULISH_YEAE') or record.get('OVC_HS_PUBLISH_YEAR') or record.get('OVC_GET_YEAR') or record.get('OVC_HA_GET_YEAR') or record.get('YEAR') %}
+            {% elif field == 'OVC_HOST_NAME' or field == 'DEPT_NAME' %}
+                {% set val = record.get('OVN_RP_MAIN_AUTHOR_DEPT_NAME') or record.get('OVN_HA_UNIT_NAME') or record.get('OVN_HA_BELONG') or record.get('OVC_HOST_NAME') or record.get('OVC_TO_APPLY_DEPT1_NAME') or record.get('DEPT_NAME') %}
+            {% elif field == 'OVN_RP_NAME' or field == 'TITLE' %}
+                {% set val = record.get('OVN_RP_NAME') or record.get('OVN_HS_NAME') or record.get('OVC_TO_NAME') or record.get('OVN_TO_NAME') or record.get('OVN_PAPER_NAME') or record.get('OVN_FILE_NAME') or record.get('TITLE') %}
+            {% elif field == 'OVN_SUMMARY' or field == 'SUMMARY' %}
+                {% set val = record.get('OVN_SUMMARY') or record.get('OVC_HS_SUMMARY') or record.get('OVN_HS_SUMMARY') or record.get('OVN_TO_SUMMARY') or record.get('OVN_FLD_DESC') or record.get('SUMMARY') %}
+            {% elif field == 'OVN_RP_AUTHOR_LIST' or field == 'AUTHOR' %}
+                {% set val = record.get('OVN_RP_AUTHOR_LIST') or record.get('OVN_TO_PEOPLE') or record.get('OVN_PAPER_AUTHOR') or record.get('AUTHOR') or record.get('OVN_RP_AUTHOR') %}
+            {% endif %}
+        {% endif %}
+
+        {% if val %}
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+            <th style="width: 160px; background: #f8fafc; padding: 12px; color: #334155;">
+                {{ label }}
+            </th>
+            <td style="padding: 12px; color: #0f172a;">
+                {% if field == 'OVN_RP_MAIN_AUTHOR' or field == 'OVN_RP_AUTHOR' %}
+                    <a href="{{ url_for('search.do_search', q=val) }}"
+                       style="color: var(--primary-color); text-decoration: none;"
+                       onmouseover="this.style.textDecoration='underline'"
+                       onmouseout="this.style.textDecoration='none'">{{ val }}</a>
+                {% else %}
+                    {{ val }}
+                {% endif %}
+            </td>
+        </tr>
+        {% endif %}
+    {% endfor %}
+
+
+    {% if false %}
+    <!-- 永久網址 (暫時隱藏，未來需要時可將外層 if false 移除以恢復) -->
+    {% if permalink_token %}
+    <tr style="border-bottom: 1px solid #e2e8f0;">
+        <th style="width: 160px; background: #f8fafc; padding: 12px; color: #334155;">永久網址</th>
+        <td style="padding: 12px; color: #0f172a;">
+            <input type="text" readonly
+                   value="{{ url_for('search.permalink_view', token=permalink_token, _external=True) }}"
+                   style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px;
+                          background: #f8fafc; color: #64748b; font-size: 0.9rem;"
+                   onclick="this.select()">
+        </td>
+    </tr>
+    {% endif %}
+    {% endif %}
+</table>
+
+{# ── 相關文件推薦 ── #}
+{% if related_docs %}
+<div class="related-docs" style="margin-top: 2rem; margin-bottom: 2rem; padding: 1.5rem;
+     background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+    <h4 style="margin-bottom: 1rem; color: #334155; font-size: 1.1rem;">
+        <i class="bi bi-diagram-3"></i> 相關文件推薦
+    </h4>
+    <ul style="list-style-type: none; padding-left: 0;">
+        {% for doc in related_docs %}
+        <li style="margin-bottom: 0.5rem;">
+            <a href="{{ url_for('search.get_detail', token=doc.SYS_NO | sign_doc) }}"
+               style="color: var(--primary-color); text-decoration: none;">
+                {{ doc.TITLE }}
+            </a>
+            <span style="font-size: 0.85rem; color: #94a3b8; margin-left: 10px;">({{ doc.DATA_TYPE }})</span>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{# ── 等級修改說明 (當 PROVEDATA 有資料時呈現) ── #}
+{% if has_prove_data and portal_config.get('level_change_desc') %}
+<div style="background-color: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 12px 16px; border-radius: 6px; margin-bottom: 15px; font-size: 0.95rem; max-width: 700px; line-height: 1.5;">
+    <i class="bi bi-info-circle-fill"></i> <strong>等級修改說明：</strong><br>
+    {{ portal_config.get('level_change_desc') }}
+</div>
+{% endif %}
+
+{# ── 操作按鈕列 ── #}
+
+<div class="mt-4" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+    {% if record.get('DATA_TYPE') != '技術報告' or record.get('SECRET_LV_CDE') == 'NOR' or record.get('OVC_SECRET_LV_CDE') == 'NOR' %}
+    <button id="downloadBtn" class="btn" style="background-color: #0284c7; color: white;">下載檔案</button>
+    {% endif %}
+
+    {# 收藏書房按鈕 (Task 2) #}
+    <form action="{{ url_for('search.add_bookmark') }}" method="POST" style="display: inline;" data-no-overlay="true">
+        <input type="hidden" name="sys_no" value="{{ record.get('OVC_RP_NO') or record.get('OVC_HS_NO') or record.get('OVC_TO_NO') or record.get('OVC_PAPER_ID') }}">
+        <input type="hidden" name="data_type" value="{{ record.get('DATA_TYPE') }}">
+        <button type="submit" class="btn-bookmark">
+            <i class="bi bi-bookmark-plus"></i> 加入書房
+        </button>
+    </form>
+
+    {# 返回簡目：優先使用 session 記錄的上一次搜尋 URL，無則回首頁 #}
+    <a href="{{ session.get('last_search_url') or url_for('search.index') }}"
+       class="btn" style="background-color: #64748b; color: white; text-decoration: none;
+              padding: 6px 12px; border-radius: 4px;">
+        返回簡目列表
+    </a>
+</div>
+<div id="downloadMessage" style="margin-top: 10px; font-weight: bold;"></div>
+<div id="bm-toast" style="display:none; margin-top: 8px; padding: 0.6rem 1rem; border-radius: 8px;
+     font-size: 0.9rem;"></div>
+
+<script>
+// ── Bookmark (Task 2) ──────────────────────────────────────────────────────
+const _BM_SYS_NO    = "{{ record.get('OVC_RP_NO') or record.get('OVC_HS_NO') or record.get('OVC_TO_NO') or record.get('OVC_PAPER_ID') or '' }}";
+const _BM_DTYPE     = "{{ record.get('DATA_TYPE', '') }}";
+const _BM_TITLE     = "{{ (record.get('OVN_RP_NAME') or record.get('OVN_HS_TITLE') or record.get('OVN_TO_TITLE') or record.get('OVN_PAPER_TITLE') or '') | replace('"', '') }}";
+const _BM_API_ADD   = "{{ url_for('search.api_bookmarks') }}";
+const _BM_API_DEL   = "{{ url_for('search.api_delete_bookmark', sys_no='__NO__') }}";
+
+function showBmToast(msg, ok) {
+    var t = document.getElementById('bm-toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    t.style.background = ok ? '#dcfce7' : '#fee2e2';
+    t.style.color = ok ? '#166534' : '#991b1b';
+    setTimeout(function () { t.style.display = 'none'; }, 3000);
+}
+
+function toggleBookmark() {
+    var btn   = document.getElementById('bookmarkBtn');
+    var saved = btn.classList.contains('is-saved');
+
+    if (saved) {
+        // Remove bookmark
+        var url = _BM_API_DEL.replace('__NO__', encodeURIComponent(_BM_SYS_NO));
+        fetch(url, {method: 'DELETE', headers: {'X-Requested-With': 'XMLHttpRequest'}})
+        .then(r => r.json())
+        .then(d => {
+            btn.classList.remove('is-saved');
+            document.getElementById('bookmarkIcon').className = 'bi bi-bookmark-plus';
+            document.getElementById('bookmarkLabel').textContent = '加入書房';
+            showBmToast('已從書房移除。', true);
+        })
+        .catch(() => showBmToast('操作失敗', false));
+    } else {
+        // Add bookmark
+        fetch(_BM_API_ADD, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+            body: JSON.stringify({sys_no: _BM_SYS_NO, data_type: _BM_DTYPE, title: _BM_TITLE})
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.status === 'success' || d.status === 'exists') {
+                btn.classList.add('is-saved');
+                document.getElementById('bookmarkIcon').className = 'bi bi-bookmark-check-fill';
+                document.getElementById('bookmarkLabel').textContent = '已在書房';
+                showBmToast(d.status === 'exists' ? '該項目已在書房中。' : '已加入書房！', true);
+            } else {
+                showBmToast(d.message || '加入失敗', false);
+            }
+        })
+        .catch(() => showBmToast('網路錯誤', false));
+    }
+}
+
+// ── Zero-Trust Download ──────────────────────────────────────────────────
+document.getElementById('downloadBtn').addEventListener('click', function() {
+    const docId = _BM_SYS_NO;
+    const msgDiv = document.getElementById('downloadMessage');
+    msgDiv.style.color = '#0ea5e9';
+    msgDiv.innerText = '[模擬] 正向零信任閘道請求連線...';
+
+    setTimeout(() => {
+        const endpoint = "{{ url_for('search.file_download', data_type='__TYPE__', sys_no='__PLACEHOLDER__') }}".replace('__TYPE__', encodeURIComponent(_BM_DTYPE)).replace('__PLACEHOLDER__', encodeURIComponent(docId));
+        msgDiv.style.color = 'green';
+        msgDiv.innerHTML = `<i class="bi bi-check-circle"></i> 授權成功！開始下載檔案...`;
+        window.location.href = endpoint;
+    }, 800);
+});
+</script>
+
+</div>{# end data-detail-type wrapper #}
+{% endblock %}

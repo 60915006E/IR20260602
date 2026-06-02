@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 1000px; margin: 0 auto; margin-top:20px;">
+    
+    {# ── 橫向子導覽列 ── #}
+    <div class="admin-subnav" style="display: flex; gap: 10px; border-bottom: 2px solid var(--border-color); padding-bottom: 12px; margin-bottom: 2rem; flex-wrap: wrap;">
+        <a href="{{ url_for('admin.field_settings') }}" class="btn btn-sm btn-outline-secondary">前台顯示欄位控制</a>
+        <a href="{{ url_for('admin.oracle_fields_settings') }}" class="btn btn-sm btn-outline-secondary">Oracle 核心欄位配置</a>
+        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-sm btn-outline-secondary">使用者管理</a>
+        <a href="{{ url_for('search.theme_admin') }}" class="btn btn-sm btn-primary">主題館修改</a>
+        <a href="{{ url_for('admin.system_settings') }}" class="btn btn-sm btn-outline-secondary">系統組態設定</a>
+        <a href="{{ url_for('admin.audit_logs_view') }}" class="btn btn-sm btn-outline-secondary">系統稽核日誌</a>
+        <a href="{{ url_for('admin.system_health') }}" class="btn btn-sm btn-outline-secondary">系統健康度檢查</a>
+        <button id="adminDarkModeBtn" class="btn btn-sm btn-outline-secondary" style="margin-left: auto;">切換黑暗模式</button>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 style="color: var(--primary-color); margin: 0;"><i class="bi bi-tools"></i> 主題特藏館編輯：{{ theme_name }}</h2>
+        <a href="{{ url_for('search.theme_admin') }}" class="btn btn-outline-secondary btn-sm">返回總覽</a>
+    </div>
+    <div class="alert alert-info py-2 px-3 mb-4" style="font-size: 0.9rem;">
+        <strong>系統說明：</strong> 網址與代號 <code>{{ theme_name }}</code> 為內部系統唯一識別碼。您在此處設定的「主題館顯示名稱 (標題)」即為前台使用者看到的正式名稱。
+    </div>
+
+    <!-- 基礎設定與獨立新增書目區塊 -->
+    <div class="row mb-4">
+        <div class="col-md-7">
+            <div style="background: #f8fafc; padding: 1.5rem; border-radius: 8px; border: 1px solid #cbd5e1; height: 100%;">
+                <h5 class="fw-bold"><i class="bi bi-info-square"></i> 主題基本設定</h5>
+                <label class="form-label mt-2">主題館顯示名稱 (標題)：</label>
+                <input type="text" id="themeTitle" class="form-control" value="{{ theme.title }}" placeholder="例如: AI 前瞻技術集錦">
+                
+                <h6 class="fw-bold mt-4"><i class="bi bi-list-check"></i> 目前收錄的書目識別碼 (OVC_SYS_NO)</h6>
+                <div id="currentSysNos" style="background: white; border: 1px solid #e2e8f0; padding: 10px; border-radius: 4px; min-height: 80px; max-height:150px; overflow-y:auto; font-family: monospace;">
+                    {% for sid in theme.sys_nos %}
+                    <span class="badge bg-secondary me-1 mb-1 sys-badge" data-sid="{{ sid }}" style="font-size:0.9rem;">
+                        {{ sid }} <a href="#" class="text-white text-decoration-none ms-1" onclick="removeSysNo('{{ sid }}');return false;">&times;</a>
+                    </span>
+                    {% else %}
+                    <span class="text-muted">尚未收錄任何書目。</span>
+                    {% endfor %}
+                </div>
+                <small class="text-muted d-block mt-1">您可點擊「x」或透過下方搜尋覆蓋名單，所有變更皆須按下底端更新才生效。</small>
+            </div>
+        </div>
+        
+        <div class="col-md-5">
+            <div style="background: #fffbeb; padding: 1.5rem; border-radius: 8px; border: 1px solid #fde68a; height: 100%;">
+                <h5 class="fw-bold" style="color: #d97706;"><i class="bi bi-node-plus"></i> 手動獨立新增書目</h5>
+                <p style="color: #92400e; font-size: 0.9rem;">若您已有特定識別碼，請可直接貼上，並以<b>英文逗點 (,)</b> 區分。</p>
+                <textarea id="manualSysNos" class="form-control mb-3" rows="3" placeholder="例如: R001, R002, X999"></textarea>
+                <button class="btn" style="background-color: #d97706; color: white; width: 100%;" onclick="addManualSysNos()">立即加入名單</button>
+            </div>
+        </div>
+    </div>
+
+    <hr class="my-4">
+
+    <!-- 內建進階搜尋整合介面 -->
+    <div style="background: #f0fdf4; padding: 1.5rem; border-radius: 8px; border: 1px solid #bbf7d0;">
+        <h5 class="fw-bold" style="color: #166534;"><i class="bi bi-search"></i> 從資料庫搜尋並納入主題館</h5>
+        <p style="color: #15803d; font-size: 0.9rem;">在此可執行快速的屬性檢索，並直接勾選查出的書目加入上方收錄清單。</p>
+        
+        <div class="d-flex gap-2 mb-3">
+            <select id="searchField" class="form-control" style="width: auto;">
+                <option value="標題">標題</option>
+                <option value="作者">作者</option>
+                <option value="內容">內容</option>
+                <option value="年度">年度</option>
+                <option value="單位">單位</option>
+                <option value="機密等級">機密等級</option>
+                <option value="報告系統唯一編號">報告系統唯一編號</option>
+            </select>
+            <input type="text" id="searchValue" class="form-control" placeholder="請輸入檢索詞...">
+            <button class="btn btn-success" onclick="executeMiniSearch()">搜尋</button>
+        </div>
+
+        <div id="searchResultArea" style="display:none;">
+            <p class="fw-bold">搜尋結果 (僅顯示前50筆)：</p>
+            <div id="searchRecords" class="list-group" style="max-height: 300px; overflow-y: auto;">
+                <!-- JS 動態插入 -->
+            </div>
+            <div class="text-end mt-3">
+                <button class="btn btn-outline-success" onclick="confirmSearchSelection()">確認資料 (將勾選項目納入主題館)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 更新存檔 -->
+    <div class="mt-4 pt-3 border-top text-center">
+        <button class="btn btn-primary btn-lg px-5" onclick="saveTheme()">更新主題館 (立刻重整儲存)</button>
+        <div id="saveMsg" class="mt-2 fw-bold"></div>
+    </div>
+
+</div>
+
+<script>
+    // 記憶體中的 SysNos 陣列，初始化自樣板
+    let currentSysNos = [
+        {% for sid in theme.sys_nos %}"{{ sid }}"{% if not loop.last %},{% endif %}{% endfor %}
+    ];
+
+    function renderSysNos() {
+        const container = document.getElementById('currentSysNos');
+        // 去重複
+        currentSysNos = [...new Set(currentSysNos)].filter(x => x);
+        
+        if(currentSysNos.length === 0) {
+            container.innerHTML = '<span class="text-muted">尚未收錄任何書目。</span>';
+            return;
+        }
+        
+        container.innerHTML = currentSysNos.map(sid => `
+            <span class="badge bg-secondary me-1 mb-1" style="font-size:0.9rem;">
+                ${sid} <a href="#" class="text-white text-decoration-none ms-1" onclick="removeSysNo('${sid}');return false;">&times;</a>
+            </span>
+        `).join('');
+    }
+
+    function removeSysNo(sid) {
+        currentSysNos = currentSysNos.filter(x => x !== sid);
+        renderSysNos();
+    }
+
+    function addManualSysNos() {
+        const val = document.getElementById('manualSysNos').value;
+        const arr = val.split(',').map(x => x.trim()).filter(x => x);
+        currentSysNos = currentSysNos.concat(arr);
+        renderSysNos();
+        document.getElementById('manualSysNos').value = '';
+        alert(`已成功掛載 ${arr.length} 筆識別碼至暫存編輯區，請記得點擊最底下更新按鈕！`);
+    }
+
+    async function executeMiniSearch() {
+        // 利用正式環境的新版結果 API 做 AJAX 呼叫
+        const field = document.getElementById('searchField').value;
+        const val = document.getElementById('searchValue').value;
+        
+        const fd = new FormData();
+        fd.append('field[]', field);
+        fd.append('operator[]', 'AND');
+        fd.append('value[]', val);
+
+        document.getElementById('searchResultArea').style.display = 'block';
+        const container = document.getElementById('searchRecords');
+        container.innerHTML = '<div class="p-3 text-center text-muted">搜尋中...</div>';
+
+        try {
+            // 利用我們已經整合進 main 的 advanced post API 取得 JSON？
+            // 由於 /results 回傳的是 HTML，我們這裡專為 Admin 寫一個 mini api 較安全，
+            // 但考量要求「以進階搜尋模式」，我會向已經存在的 /api/mini_search 模組呼叫。
+            const res = await fetch("{{ url_for('search.api_mini_search') }}", {
+                method: 'POST', body: fd
+            });
+            const data = await res.json();
+            
+            if(data.records && data.records.length > 0) {
+                container.innerHTML = data.records.map(r => `
+                    <label class="list-group-item d-flex gap-3 align-items-center">
+                        <input class="form-check-input flex-shrink-0 search-result-chk" type="checkbox" value="${r.OVC_RP_NO}">
+                        <div>
+                            <h6 class="my-0 fw-bold">${r.TITLE}</h6>
+                            <small class="text-muted">${r.OVC_RP_NO} | ${r.DEPT_NAME}</small>
+                        </div>
+                    </label>
+                `).join('');
+            } else {
+                container.innerHTML = '<div class="p-3 text-center text-danger">找不到符合的書目。</div>';
+            }
+        } catch (err) {
+            container.innerHTML = '<div class="p-3 text-center text-danger">發生錯誤：' + err + '</div>';
+        }
+    }
+
+    function confirmSearchSelection() {
+        const chks = document.querySelectorAll('.search-result-chk:checked');
+        let count = 0;
+        chks.forEach(chk => {
+            currentSysNos.push(chk.value);
+            count++;
+        });
+        renderSysNos();
+        alert(`已成功圈選 ${count} 筆書目！`);
+    }
+
+    async function saveTheme() {
+        const title = document.getElementById('themeTitle').value.trim();
+        const msg = document.getElementById('saveMsg');
+        
+        if(!title) {
+            msg.style.color = 'red'; msg.innerText = '主題名稱為必填！'; return;
+        }
+        
+        msg.style.color = 'blue'; msg.innerText = '儲存中...';
+        
+        const payload = {
+            theme_name: "{{ theme_name }}",
+            title: title,
+            sys_nos: currentSysNos
+        };
+        
+        try {
+            const res = await fetch("{{ url_for('search.api_theme_save') }}", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if(res.ok) {
+                msg.style.color = 'green'; msg.innerText = data.message;
+                setTimeout(function() {
+                    window.location.href = "{{ url_for('search.theme_admin') }}";
+                }, 1000);
+            } else {
+                msg.style.color = 'red'; msg.innerText = data.message;
+            }
+        } catch(err) {
+            msg.style.color = 'red'; msg.innerText = err;
+        }
+    }
+</script>
+{% endblock %}

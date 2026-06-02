@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}{{ theme_title }} - 主題館{% endblock %}
+{% block content %}
+<div class="row mb-4 mt-3">
+    <div class="col-12">
+        <h2 class="display-6"><i class="bi bi-collection-play text-primary"></i> 精選主題館：{{ theme_title }}</h2>
+        <p class="text-muted">本館收錄共 {{ total_items }} 筆特定指定歷史與技術資料</p>
+        
+        <form action="{{ url_for('search.theme_view', theme_name=request.view_args.theme_name) }}" method="GET" class="mt-3 bg-light p-3 rounded border">
+            <span class="me-3 fw-bold text-secondary"><i class="bi bi-funnel"></i> 資料類型過濾:</span>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" name="data_types" id="opt_tech" value="技術報告" onChange="this.form.submit()" {% if not selected_types or '技術報告' in selected_types %}checked{% endif %}>
+                <label class="form-check-label" for="opt_tech">技術報告</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" name="data_types" id="opt_history" value="史政" onChange="this.form.submit()" {% if not selected_types or '史政' in selected_types %}checked{% endif %}>
+                <label class="form-check-label" for="opt_history">史政</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" name="data_types" id="opt_photo" value="史政照片" onChange="this.form.submit()" {% if not selected_types or '史政照片' in selected_types %}checked{% endif %}>
+                <label class="form-check-label" for="opt_photo">史政照片</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" name="data_types" id="opt_news" value="逸光報" onChange="this.form.submit()" {% if not selected_types or '逸光報' in selected_types %}checked{% endif %}>
+                <label class="form-check-label" for="opt_news">逸光報</label>
+            </div>
+            <noscript><button type="submit" class="btn btn-sm btn-outline-primary ms-2">套用過濾</button></noscript>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        {% if results %}
+            <div class="list-group">
+            {% for item in results %}
+                <div class="list-item type-{{ item.DATA_TYPE }}" style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid var(--primary-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <div>
+                            <span class="card-type" style="margin-right: 10px;">{{ item.DATA_TYPE }}</span>
+                            {% set pkeys = {'技術報告': 'OVC_RP_NO', '史政': 'OVC_HS_NO', '史政照片': 'OVC_TO_NO', '逸光報': 'OVC_PAPER_ID'} %}
+                            {% set pk_field = pkeys.get(item.DATA_TYPE) %}
+                            {% if pk_field and pk_field in get_enabled_fields(item.DATA_TYPE, False) %}
+                            <span style="font-size: 0.85rem; color: #64748b;"><i class="bi bi-upc-scan"></i> {{ item.SYS_NO }}</span>
+                            {% endif %}
+                        </div>
+                        <span style="font-size: 0.8rem; color: #94a3b8; background: #f1f5f9; padding: 2px 8px; border-radius: 10px;">{{ item.PUBLISH_DATE }}</span>
+                    </div>
+
+                    <h4 style="margin-bottom: 0.5rem; font-size: 1.25rem;">
+                        <a href="{{ url_for('search.get_detail', token=item.SYS_NO | sign_doc) }}" target="_blank" style="color: var(--primary-color); text-decoration: none; font-weight: 600;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                            {{ item.TITLE }}
+                        </a>
+                    </h4>
+
+                    <div class="card-meta" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 0.75rem;">
+                        {% set full_record = parse_json(item.EXACT_DATA_JSON) if item.get('EXACT_DATA_JSON') else item %}
+                        {% for field in portal_config.get('theme_list_fields', []) %}
+                            {% if full_record.get(field) and is_field_allowed(item.DATA_TYPE, field, False) %}
+                            <span style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; color: #334155;">
+                                <strong style="color: var(--primary-color);">{{ portal_config.get('custom_field_names', {}).get(field) or (COLUMN_MAP.get(field)[0] if field in COLUMN_MAP else field) }}:</strong> 
+                                {{ full_record.get(field) | string | truncate(50, True, '...') }}
+                            </span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <p class="card-summary" style="margin-bottom: 0; color: #475569; line-height: 1.6;">
+                        {% if item.SUMMARY %}
+                            {{ item.SUMMARY | truncate(120, True, '...') }}
+                        {% else %}
+                            <i style="color: #94a3b8;">此類型物件無提供摘要說明</i>
+                        {% endif %}
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <small class="text-muted">
+                            {% set pkeys = {'技術報告': 'OVC_RP_NO', '史政': 'OVC_HS_NO', '史政照片': 'OVC_TO_NO', '逸光報': 'OVC_PAPER_ID'} %}
+                            {% set pk_field = pkeys.get(item.DATA_TYPE) %}
+                            {% if pk_field and pk_field in get_enabled_fields(item.DATA_TYPE, False) %}
+                            <i class="bi bi-upc-scan"></i> {{ item.SYS_NO }} |
+                            {% endif %}
+                            <i class="bi bi-calendar3"></i> {{ item.PUBLISH_DATE }} |
+                            {{ portal_config.get('custom_field_names', {}).get('OVC_SECRET_LV_CDE') or '機密等級' }}: <span class="badge {% if item.SECRET_LV_CDE == '一般' %}bg-success{% else %}bg-danger{% endif %}">{{ item.SECRET_LV_CDE }}</span>
+                        </small>
+                    </div>
+                </div>
+            {% endfor %}
+            </div>
+            
+            {% if total_pages > 1 %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('search.theme_view', theme_name=request.view_args.theme_name, page=page-1, data_types=selected_types) }}">上一頁</a>
+                    </li>
+                    {% for p in page_range %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('search.theme_view', theme_name=request.view_args.theme_name, page=p, data_types=selected_types) }}">{{ p }}</a>
+                    </li>
+                    {% endfor %}
+                    <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('search.theme_view', theme_name=request.view_args.theme_name, page=page+1, data_types=selected_types) }}">下一頁</a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+            
+        {% else %}
+            <div class="alert alert-secondary">
+                此主題館尚無公開的授權資料集。
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

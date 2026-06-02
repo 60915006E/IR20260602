@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="search-container">
+    <form action="{{ url_for('search.do_search') }}" method="GET" class="search-form">
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <input type="text" name="q" id="search-input-unified" class="search-input" value="{{ q }}" placeholder="請輸入關鍵字..." style="flex-grow: 1;" autocomplete="off" list="suggestion-list-unified">
+            <datalist id="suggestion-list-unified"></datalist>
+            
+            <select name="sort" class="search-input" style="width: auto;">
+                <option value="relevance" {% if sort == 'relevance' %}selected{% endif %}>相關度 (預設)</option>
+                <option value="date_desc" {% if sort == 'date_desc' %}selected{% endif %}>發布日期 (新→舊)</option>
+                <option value="date_asc" {% if sort == 'date_asc' %}selected{% endif %}>發布日期 (舊→新)</option>
+                <option value="title_asc" {% if sort == 'title_asc' %}selected{% endif %}>標題字母序</option>
+            </select>
+            
+            <button type="submit" class="btn">重新搜尋</button>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" name="data_types" id="opt_tech" value="技術報告" {% if not selected_types or '技術報告' in selected_types %}checked{% endif %}>
+            <label class="form-check-label" for="opt_tech">技術報告</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" name="data_types" id="opt_history" value="史政" {% if not selected_types or '史政' in selected_types %}checked{% endif %}>
+            <label class="form-check-label" for="opt_history">史政</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" name="data_types" id="opt_photo" value="史政照片" {% if not selected_types or '史政照片' in selected_types %}checked{% endif %}>
+            <label class="form-check-label" for="opt_photo">史政照片</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" name="data_types" id="opt_news" value="逸光報" {% if not selected_types or '逸光報' in selected_types %}checked{% endif %}>
+            <label class="form-check-label" for="opt_news">逸光報</label>
+        </div>
+    </form>
+</div>
+
+<div class="results-header">
+    <div>
+        <h2 style="font-size: 1.5rem;">搜尋結果</h2>
+        <p style="color: #64748b; margin-top: 0.5rem;">
+            關鍵字：<strong style="color: var(--primary-color);">{{ q or '無' }}</strong> ｜ 
+            共找到 <strong>{{ total_items }}</strong> 筆資料
+        </p>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+        <form action="{{ url_for('search.save_search') }}" method="POST" style="display: inline;" data-no-overlay="true">
+            {# 將目前 URL 的所有 GET 參數轉為隱藏欄位，以便 POST 儲存 #}
+            {% for key, value in request.args.items() %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endfor %}
+            <button type="submit" class="btn btn-sm" style="background-color: #f59e0b; color: white;"><i class="bi bi-star"></i> 儲存此查詢</button>
+        </form>
+        <a href="{{ url_for('search.export_data', q=q, format='excel') }}" class="btn btn-sm" style="background-color: #10b981; color: white;">匯出 Excel</a>
+        <a href="{{ url_for('search.export_data', q=q, format='csv') }}" class="btn btn-sm" style="background-color: #0ea5e9; color: white;">匯出 CSV</a>
+        <a href="{{ url_for('search.export_data', q=q, format='txt') }}" class="btn btn-sm" style="background-color: #64748b; color: white;">匯出 TXT</a>
+    </div>
+</div>
+
+{% if results %}
+<div style="display: flex; gap: 2rem; align-items: start;">
+    <div style="flex: 1; min-width: 0;">
+        <div class="list-group" style="display: flex; flex-direction: column; gap: 1rem;">
+    {% for item in results %}
+    <div class="list-item type-{{ item.DATA_TYPE }}" style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid var(--primary-color);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <div>
+                <span class="card-type" style="margin-right: 10px;">{{ item.DATA_TYPE }}</span>
+                {% set pkeys = {'技術報告': 'OVC_RP_NO', '史政': 'OVC_HS_NO', '史政照片': 'OVC_TO_NO', '逸光報': 'OVC_PAPER_ID'} %}
+                {% set pk_field = pkeys.get(item.DATA_TYPE) %}
+                {% if pk_field and pk_field in get_enabled_fields(item.DATA_TYPE, False) %}
+                <span style="font-size: 0.85rem; color: #64748b;"><i class="bi bi-upc-scan"></i> {{ item.SYS_NO }}</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <h4 style="margin-bottom: 0.5rem; font-size: 1.25rem;">
+            <a href="{{ url_for('search.get_detail', token=item.SYS_NO | sign_doc) }}" target="_blank" style="color: var(--primary-color); text-decoration: none; font-weight: 600;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                {{ item.TITLE | highlight(q) | safe }}
+            </a>
+        </h4>
+        
+        <div class="card-meta" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 0.75rem;">
+            {% set full_record = parse_json(item.EXACT_DATA_JSON) if item.get('EXACT_DATA_JSON') else item %}
+            {% for f_item in get_dynamic_fields_with_labels(item.DATA_TYPE, False) %}
+                {% set field = f_item.FIELD_NAME %}
+                {% set label = f_item.FIELD_LABEL %}
+                {% set val = full_record.get(field) %}
+                {% if val %}
+                <span style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; color: #334155;">
+                    <strong style="color: var(--primary-color);">{{ label }}:</strong> 
+                    {{ val | string | truncate(50, True, '...') }}
+                </span>
+                {% endif %}
+            {% endfor %}
+        </div>
+        
+        <p class="card-summary" style="margin-bottom: 0; color: #475569; line-height: 1.6;">
+            {% if item.SUMMARY %}
+                {{ item.SUMMARY | truncate(120, True, '...') | highlight(q) | safe }}
+            {% else %}
+                <i style="color: #94a3b8;">此類型物件無提供摘要說明</i>
+            {% endif %}
+        </p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- 分頁導航 -->
+{% if total_pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+        <a href="{{ url_for('search.do_search', q=q, year=year, dept=dept, sort=sort, data_types=selected_types, page=page-1) }}" class="page-link">上一頁</a>
+    {% endif %}
+
+    {% for p in page_range %}
+        <a href="{{ url_for('search.do_search', q=q, year=year, dept=dept, sort=sort, data_types=selected_types, page=p) }}" class="page-link {% if p == page %}active{% endif %}">{{ p }}</a>
+    {% endfor %}
+
+    {% if page < total_pages %}
+        <a href="{{ url_for('search.do_search', q=q, year=year, dept=dept, sort=sort, data_types=selected_types, page=page+1) }}" class="page-link">下一頁</a>
+    {% endif %}
+</div>
+{% endif %}
+    </div> <!-- End Left Column -->
+
+    <!-- Right Sidebar -->
+    <div style="width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 1.5rem;">
+        <!-- Word Cloud -->
+        <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom: 1rem; color: var(--primary-color); font-size: 1.1rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem;">檢索結果文字雲</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; min-height: 150px;">
+                {% for wc in word_cloud %}
+                <span style="font-size: {{ wc.size }}; color: hsl({{ loop.index0 * 30 % 360 }}, 70%, 45%); font-weight: bold; line-height: 1;">{{ wc.word }}</span>
+                {% endfor %}
+                {% if not word_cloud %}
+                <p style="color: #94a3b8; font-size: 0.9rem;">結果過少，無法產生文字雲</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Facets: Data Type -->
+        <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom: 1rem; color: var(--primary-color); font-size: 1.1rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem;">二次篩選：資料類型</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                {% for tf in type_facets %}
+                <a href="{{ url_for('search.do_search', q=q, year=year, dept=dept, sort=sort, data_types=tf.DATA_TYPE) }}" style="display: flex; justify-content: space-between; align-items: center; text-decoration: none; color: #475569; padding: 0.5rem; border-radius: 6px; background: {% if selected_types and tf.DATA_TYPE in selected_types %}#e0f2fe{% else %}#f8fafc{% endif %}; transition: background 0.2s;">
+                    <span style="font-weight: 500;">{{ tf.DATA_TYPE }}</span>
+                    <span style="background: #cbd5e1; color: #0f172a; padding: 0 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold;">{{ tf.C }}</span>
+                </a>
+                {% endfor %}
+                {% if not type_facets %}
+                <p style="color: #94a3b8; font-size: 0.9rem;">無資料類型統計</p>
+                {% endif %}
+                {% if selected_types %}
+                <a href="{{ url_for('search.do_search', q=q, year=year, dept=dept, sort=sort) }}" style="text-align: center; font-size: 0.85rem; color: #ef4444; margin-top: 0.5rem; text-decoration: none; padding: 0.4rem; background: #fee2e2; border-radius: 6px;">✖ 清除資料類型篩選</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Facets: Year -->
+        <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom: 1rem; color: var(--primary-color); font-size: 1.1rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem;">二次篩選：年度</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                {% for yf in year_facets %}
+                <a href="{{ url_for('search.do_search', q=q, dept=dept, sort=sort, data_types=selected_types, year=yf.YEAR) }}" style="display: flex; justify-content: space-between; text-decoration: none; color: #475569; padding: 0.5rem; border-radius: 6px; background: {% if year == (yf.YEAR|string) %}#e0f2fe{% else %}#f8fafc{% endif %}; transition: background 0.2s;">
+                    <span style="font-weight: 500;">{{ yf.YEAR }}</span>
+                    <span style="background: #cbd5e1; color: #0f172a; padding: 0 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold;">{{ yf.C }}</span>
+                </a>
+                {% endfor %}
+                {% if not year_facets %}
+                <p style="color: #94a3b8; font-size: 0.9rem;">無年度資料</p>
+                {% endif %}
+                {% if year %}
+                <a href="{{ url_for('search.do_search', q=q, dept=dept, sort=sort, data_types=selected_types) }}" style="text-align: center; font-size: 0.85rem; color: #ef4444; margin-top: 0.5rem; text-decoration: none; padding: 0.4rem; background: #fee2e2; border-radius: 6px;">✖ 清除年度篩選</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Facets: Dept -->
+        <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom: 1rem; color: var(--primary-color); font-size: 1.1rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem;">二次篩選：單位</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                {% for df in dept_facets %}
+                <a href="{{ url_for('search.do_search', q=q, year=year, sort=sort, data_types=selected_types, dept=df.DEPT_NAME) }}" style="display: flex; justify-content: space-between; align-items: center; text-decoration: none; color: #475569; padding: 0.5rem; border-radius: 6px; background: {% if dept == df.DEPT_NAME %}#e0f2fe{% else %}#f8fafc{% endif %}; transition: background 0.2s;">
+                    <span style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;" title="{{ df.DEPT_NAME }}">{{ df.DEPT_NAME }}</span>
+                    <span style="background: #cbd5e1; color: #0f172a; padding: 0 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold;">{{ df.C }}</span>
+                </a>
+                {% endfor %}
+                {% if not dept_facets %}
+                <p style="color: #94a3b8; font-size: 0.9rem;">無單位資料</p>
+                {% endif %}
+                {% if dept %}
+                <a href="{{ url_for('search.do_search', q=q, year=year, sort=sort, data_types=selected_types) }}" style="text-align: center; font-size: 0.85rem; color: #ef4444; margin-top: 0.5rem; text-decoration: none; padding: 0.4rem; background: #fee2e2; border-radius: 6px;">✖ 清除單位篩選</a>
+                {% endif %}
+            </div>
+        </div>
+    </div> <!-- End Right Sidebar -->
+</div> <!-- End Flex Container -->
+
+{% else %}
+<div style="text-align: center; padding: 4rem; background: var(--card-bg); border-radius: 12px; margin-top: 2rem;">
+    <h3 style="color: #64748b; margin-bottom: 1rem;">找不到符合條件的資料</h3>
+    <p>請嘗試輸入其他關鍵字（例如部分名稱或編號），或調整您的搜尋範圍。</p>
+    <a href="/" class="btn" style="background-color: #3b82f6; color: white; margin-top: 1rem; text-decoration: none;">重新檢索</a>
+</div>
+{% endif %}
+
+<script>
+document.getElementById('search-input-unified').addEventListener('input', function(e) {
+    let q = e.target.value;
+    if(q.length >= 1) {
+        fetch('{{ url_for("search.autocomplete_suggestions") }}?q=' + encodeURIComponent(q))
+            .then(res => res.json())
+            .then(data => {
+                let dl = document.getElementById('suggestion-list-unified');
+                dl.innerHTML = '';
+                data.forEach(item => {
+                    let option = document.createElement('option');
+                    option.value = item;
+                    dl.appendChild(option);
+                });
+            });
+    }
+});
+</script>
+{% endblock %}

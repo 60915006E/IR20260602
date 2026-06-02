@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 850px; margin: 0 auto;">
+    <h2 style="color: var(--primary-color); margin-bottom: 0.5rem;"><i class="bi bi-funnel"></i> 進階邏輯搜尋</h2>
+    <p style="color: #64748b; margin-bottom: 1.5rem;">請建立多重屬性組合條件（最多 5 組），並選擇欲搜尋的資料類型。</p>
+
+    <form action="{{ url_for('search.results_view') }}" method="POST" id="advSearchForm">
+
+        <!-- 資料類型勾選 -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+            <label style="font-weight: bold; color: #334155; display: block; margin-bottom: 0.5rem;">
+                <i class="bi bi-collection"></i> 資料類型（可複選，未勾選代表全部）
+            </label>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <label style="cursor: pointer;"><input type="checkbox" name="data_type" value="技術報告"> 技術報告</label>
+                <label style="cursor: pointer;"><input type="checkbox" name="data_type" value="史政"> 史政</label>
+                <label style="cursor: pointer;"><input type="checkbox" name="data_type" value="史政照片"> 史政照片</label>
+                <label style="cursor: pointer;"><input type="checkbox" name="data_type" value="逸光報"> 逸光報</label>
+            </div>
+        </div>
+
+        <!-- 條件列 -->
+        <div id="criteria-container">
+            <!-- Dynamic rows will be inserted here -->
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 1rem;">
+            <div>
+                <button type="button" class="btn btn-outline-primary" id="addBtn" style="background:#f1f5f9; color:#334155; border: 1px dashed #cbd5e1;">+ 新增條件</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="saveSearch()">儲存此查詢</button>
+                <button type="button" class="btn btn-sm btn-outline-info ms-2" onclick="loadSavedSearches()">載入儲存的查詢</button>
+            </div>
+            <button type="submit" class="btn" style="background-color: var(--primary-color); padding: 0.5rem 2rem;">執行搜尋</button>
+        </div>
+    </form>
+</div>
+
+<!-- 儲存查詢列表 Modal -->
+<div id="savedSearchModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; box-shadow:0 0 10px rgba(0,0,0,0.5); z-index:1000; width: 400px; border-radius: 8px;">
+    <h4>已儲存的查詢條件</h4>
+    <ul id="savedSearchList" style="list-style:none; padding:0; max-height: 300px; overflow-y: auto;"></ul>
+    <button type="button" class="btn btn-secondary mt-3" onclick="document.getElementById('savedSearchModal').style.display='none'">關閉</button>
+</div>
+
+<script>
+    const container = document.getElementById('criteria-container');
+    const addBtn = document.getElementById('addBtn');
+    let rowCount = 0;
+    const maxRows = 5;
+
+    // 動態載入後端注入的所有白名單欄位，選項與自訂中文標籤完全即時連動
+    const dynamicFields = {{ dynamic_fields | tojson if dynamic_fields else '[]' }};
+    const categoryOptions = [];
+    if (dynamicFields && dynamicFields.length > 0) {
+        dynamicFields.forEach(f => {
+            categoryOptions.push({value: f.name, label: f.label});
+        });
+    } else {
+        categoryOptions.push(
+            {value: '標題',           label: '標題'},
+            {value: '作者',           label: '作者'},
+            {value: '報告系統唯一編號', label: '報告系統唯一編號'},
+            {value: '報告號碼',        label: '報告號碼'},
+            {value: '內容',           label: '內容（摘要/描述）'},
+            {value: '單位',           label: '單位'},
+            {value: '年度',           label: '年度'},
+            {value: '機密等級',       label: '機密等級'}
+        );
+    }
+
+    function createRow() {
+        if (rowCount >= maxRows) return;
+        rowCount++;
+
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.gap = '10px';
+        row.style.marginBottom = '15px';
+        row.style.alignItems = 'center';
+
+        // Operator
+        const opSelect = document.createElement('select');
+        opSelect.name = 'operator[]';
+        opSelect.className = 'form-control';
+        opSelect.style.width = '110px';
+        if (rowCount === 1) {
+            opSelect.style.visibility = 'hidden';
+            let opt = document.createElement('option');
+            opt.value = 'AND';
+            opSelect.appendChild(opt);
+        } else {
+            opSelect.innerHTML = `<option value="AND">且 (AND)</option><option value="OR">或 (OR)</option><option value="AND NOT">排除 (NOT)</option>`;
+        }
+        row.appendChild(opSelect);
+
+        // Category (語意欄位)
+        const catSelect = document.createElement('select');
+        catSelect.name = 'field[]';  // 後端用 field[] 接收，對應到 category
+        catSelect.className = 'form-control';
+        catSelect.style.width = '200px';
+        categoryOptions.forEach(op => {
+            catSelect.innerHTML += `<option value="${op.value}">${op.label}</option>`;
+        });
+        row.appendChild(catSelect);
+
+        // Value
+        const valInput = document.createElement('input');
+        valInput.type = 'text';
+        valInput.name = 'value[]';
+        valInput.className = 'form-control';
+        valInput.placeholder = '請輸入關鍵字...';
+        valInput.style.flexGrow = '1';
+        valInput.required = false;
+        row.appendChild(valInput);
+
+        // Remove btn
+        const rmBtn = document.createElement('button');
+        rmBtn.type = 'button';
+        rmBtn.textContent = '✖';
+        rmBtn.style.background = 'none';
+        rmBtn.style.border = 'none';
+        rmBtn.style.color = '#ef4444';
+        rmBtn.style.cursor = 'pointer';
+        if (rowCount === 1) {
+            rmBtn.style.visibility = 'hidden';
+        }
+        rmBtn.onclick = () => {
+            container.removeChild(row);
+            rowCount--;
+            checkAddBtn();
+        };
+        row.appendChild(rmBtn);
+
+        container.appendChild(row);
+        checkAddBtn();
+    }
+
+    function checkAddBtn() {
+        addBtn.style.display = (rowCount >= maxRows) ? 'none' : 'block';
+    }
+
+    addBtn.onclick = createRow;
+
+    // Default 2 rows
+    createRow();
+    createRow();
+
+    async function saveSearch() {
+        const name = prompt("請輸入此查詢組合的名稱：");
+        if (!name) return;
+
+        const fields = Array.from(document.getElementsByName('field[]')).map(e => e.value);
+        const ops = Array.from(document.getElementsByName('operator[]')).map(e => e.value);
+        const vals = Array.from(document.getElementsByName('value[]')).map(e => e.value);
+
+        const conditions = { fields, ops, vals };
+
+        const res = await fetch("{{ url_for('search.saved_searches') }}", {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name: name, conditions: conditions})
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            alert('儲存成功！');
+        } else {
+            alert('儲存失敗');
+        }
+    }
+
+    async function loadSavedSearches() {
+        const res = await fetch("{{ url_for('search.saved_searches') }}");
+        const data = await res.json();
+        const list = document.getElementById('savedSearchList');
+        list.innerHTML = '';
+        data.forEach(item => {
+            const li = document.createElement('li');
+            li.style.marginBottom = '10px';
+            li.style.borderBottom = '1px solid #e2e8f0';
+            li.style.paddingBottom = '5px';
+            li.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <a href="javascript:void(0)" onclick='applySearch(${JSON.stringify(item.conditions).replace(/'/g, "&#39;")})'>${item.name}</a>
+                    <button class="btn btn-sm btn-danger" onclick="deleteSearch(${item.id})">✖</button>
+                </div>
+                <small style="color:#64748b;">${item.created_at}</small>
+            `;
+            list.appendChild(li);
+        });
+        document.getElementById('savedSearchModal').style.display = 'block';
+    }
+
+    function applySearch(conds) {
+        document.getElementById('savedSearchModal').style.display = 'none';
+        container.innerHTML = '';
+        rowCount = 0;
+        const len = conds.fields.length;
+        for (let i = 0; i < len; i++) {
+            createRow();
+            const fieldSels = document.getElementsByName('field[]');
+            const opSels = document.getElementsByName('operator[]');
+            const valInps = document.getElementsByName('value[]');
+            fieldSels[i].value = conds.fields[i];
+            opSels[i].value = conds.ops[i];
+            valInps[i].value = conds.vals[i];
+        }
+    }
+
+    async function deleteSearch(sid) {
+        if (!confirm('確定刪除？')) return;
+        const res = await fetch(`{{ url_for('search.saved_searches') }}/${sid}`, { method: 'DELETE' });
+        if (res.ok) {
+            loadSavedSearches();
+        }
+    }
+</script>
+{% endblock %}

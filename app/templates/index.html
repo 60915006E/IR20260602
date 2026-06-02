@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block content %}
+<!-- Task: 首頁搜尋區塊背景圖 -->
+<div class="hero-section" style="position: relative; padding: 3rem 1.5rem; border-radius: 15px; overflow: hidden; margin-bottom: 3rem; margin-top: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+    <!-- 背景層 -->
+    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: url('{{ url_for('static', filename='img/background-1.jpg') }}'); background-size: cover; background-position: center; opacity: 0.7; z-index: 0;"></div>
+    
+    <!-- 內容層 -->
+    <div style="position: relative; z-index: 1;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h1 style="font-size: 2.8rem; color: #1e293b; margin-bottom: 1rem; text-shadow: 0 2px 4px rgba(255,255,255,0.8);">機構典藏系統</h1>
+            <p style="color: #475569; font-weight: 500; font-size: 1.1rem; text-shadow: 0 1px 2px rgba(255,255,255,0.8);">技術報告 · 史政 · 史政照片 · 逸光報</p>
+        </div>
+
+        <div class="search-container" style="margin-bottom: 2rem;">
+            <form action="{{ url_for('search.do_search') }}" method="GET" class="search-form" style="max-width: 800px; margin: 0 auto; background: rgba(255, 255, 255, 0.9); padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: center;">
+                    <input type="text" name="q" id="search-input-index" class="search-input"
+                           placeholder="請輸入關鍵字、人員名稱或單位..." autocomplete="off"
+                           list="suggestion-list-index" style="flex: 1; min-width: 280px;">
+                    <button type="submit" class="btn" style="padding: 0.8rem 2.5rem; font-weight: bold;">搜尋</button>
+
+                    {# Task 1: 常用搜尋下拉 #}
+                    {% if session.get('user_id') %}
+                    <details id="saved-search-details" class="saved-search-dropdown">
+                        <summary><i class="bi bi-clock-history"></i> 常用搜尋</summary>
+                        <div class="saved-search-list" id="saved-search-list">
+                            <div style="padding: 0.5rem 1rem; color: #94a3b8; font-size: 0.82rem;">載入中...</div>
+                        </div>
+                    </details>
+                    {% endif %}
+                </div>
+                
+                <datalist id="suggestion-list-index"></datalist>
+                
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 1rem; color: #334155;"><input type="checkbox" name="data_type" value="技術報告" checked style="width:18px;height:18px;"> 技術報告</label>
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 1rem; color: #334155;"><input type="checkbox" name="data_type" value="史政" checked style="width:18px;height:18px;"> 史政</label>
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 1rem; color: #334155;"><input type="checkbox" name="data_type" value="史政照片" checked style="width:18px;height:18px;"> 史政照片</label>
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 1rem; color: #334155;"><input type="checkbox" name="data_type" value="逸光報" checked style="width:18px;height:18px;"> 逸光報</label>
+                </div>
+            </form>
+        </div>
+
+        <div class="popular-keywords">
+            <p style="color: #475569; font-size: 0.95rem; margin-bottom: 0.8rem; font-weight: bold;">近期熱門搜尋</p>
+            {% if top_keywords %}
+                {% for kw in top_keywords %}
+                    <a href="{{ url_for('search.do_search', q=kw.KEYWORD) }}" class="keyword-tag" style="background: rgba(255,255,255,0.9); border: 1px solid #c7d2fe;">{{ kw.KEYWORD }}</a>
+                {% endfor %}
+            {% else %}
+                <span style="color: #94a3b8; font-size: 0.9rem;">目前尚無紀錄</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div style="margin-bottom: 3rem;">
+    <h3 style="margin-bottom: 1.5rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem; color: var(--primary-color);">動態主題館</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+        {% for theme_id, th in themes.items() %}
+        <a href="{{ url_for('search.theme_view', theme_name=theme_id) }}" class="btn" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 15px 20px; text-decoration: none; border-radius: 8px; text-align: center; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s; position: relative;">
+            <i class="bi bi-collection"></i> {{ th.title }}
+        </a>
+        {% else %}
+        <p style="color:#64748b;">目前無主題特藏</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- 最新消息與動態範本區塊 -->
+<div class="row" style="margin-bottom: 3rem; display: flex; gap: 20px; flex-wrap: wrap;">
+    <!-- 最新消息 -->
+    <div style="flex: 2; min-width: 300px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); padding: 1.5rem; border-top: 4px solid var(--primary-color);">
+        <h4 style="margin-bottom: 1rem; color: var(--primary-color);"><i class="bi bi-newspaper"></i> 最新消息</h4>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for news in portal_config.news %}
+            <div style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
+                <h5 style="margin-bottom: 5px; color: #1e293b;">{{ news.title }}</h5>
+                <p style="margin: 0; color: #475569; font-size: 0.9rem;">{{ news.content }}</p>
+            </div>
+            {% else %}
+            <p style="color: #94a3b8; font-size: 0.9rem;">目前尚無最新消息</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 範本下載 -->
+    <div style="flex: 1; min-width: 250px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); padding: 1.5rem; border-top: 4px solid #10b981;">
+        <h4 style="margin-bottom: 1rem; color: #10b981;"><i class="bi bi-file-earmark-arrow-down"></i> 範本下載</h4>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for tpl in portal_config.templates %}
+            <a href="{{ tpl.url }}" class="keyword-tag" style="display: block; text-align: left; padding: 12px; margin: 0; border: 1px solid #10b981; background: #ecfdf5; color: #065f46;">
+                <i class="bi bi-file-earmark-text"></i> {{ tpl.filename }}
+            </a>
+            {% else %}
+            <p style="color: #94a3b8; font-size: 0.9rem;">目前尚無下載範本</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- 新進館藏快報 -->
+<div style="margin-bottom: 3rem;">
+    <h3 style="margin-bottom: 1.5rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem; color: #6366f1;">新進館藏快報</h3>
+    {% if newest_items %}
+    <div class="card-grid">
+        {% for item in newest_items %}
+        <div class="result-card type-{{ item.DATA_TYPE }}">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                <span class="card-type">{{ item.DATA_TYPE or '' }}</span>
+                <span style="font-size: 0.8rem; color: #64748b;">{{ item.YEAR or '' }}</span>
+            </div>
+            <h4 class="card-title">
+                <a href="{{ url_for('search.get_detail', token=item.SYS_NO | sign_doc) }}" style="text-decoration: none; color: inherit;">{{ (item.TITLE or '') | truncate(40) }}</a>
+            </h4>
+            <div class="card-meta">
+                <span><i class="bi bi-person"></i> {{ (item.AUTHOR or '') | truncate(15) }}</span>
+                <span><i class="bi bi-building"></i> {{ (item.DEPT_NAME or '') | truncate(15) }}</span>
+            </div>
+            <p class="card-summary">{{ (item.SUMMARY or '') | truncate(80) or '無摘要' }}</p>
+            <div class="card-actions">
+                <a href="{{ url_for('search.get_detail', token=item.SYS_NO | sign_doc) }}" class="btn btn-small">查看詳目</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="text-align: center; color: #64748b; padding: 2rem;">目前無紀錄</p>
+    {% endif %}
+</div>
+
+<!-- 系統統計數據與聯絡資訊 Footer -->
+<div style="margin-top: 4rem; padding: 2rem; background-color: var(--card-bg); border-top: 1px solid var(--border-color); text-align: center; color: var(--text-color);">
+    <p style="margin-bottom: 0.5rem; font-size: 0.95rem; line-height: 1.8;">
+        本系統共收集：已公開全文：<strong>{{ "{:,}".format(stats.full_text) }}</strong> 筆、
+        書目與摘要：<strong>{{ "{:,}".format(stats.summary) }}</strong> 筆<br>
+        目前上線人數：<strong>{{ "{:,}".format(stats.online) }}</strong> ／ 
+        訪客人次（自2026年）：<strong>{{ "{:,}".format(stats.visits) }}</strong> ／ 
+        檢索次數（自2026年）：<strong>{{ "{:,}".format(stats.searches) }}</strong>
+    </p>
+    <p style="margin-bottom: 0; font-size: 0.85rem; color: #64748b;">
+        {{ portal_config.get('footer_text', '本館地址：100201 臺北市中山南路20號 電話：02-2361-9132 （本系統服務窗口請轉分機 172、870）') }}
+    </p>
+</div>
+
+<script>
+    // 關鍵字與樔 autocomplete
+    const searchInput = document.getElementById('search-input-index');
+    const suggestionList = document.getElementById('suggestion-list-index');
+
+    searchInput.addEventListener('input', async (e) => {
+        const val = e.target.value.trim();
+        if (val.length < 1) {
+            suggestionList.innerHTML = '';
+            return;
+        }
+        try {
+            const res = await fetch(`{{ url_for('search.autocomplete_suggestions') }}?q=${encodeURIComponent(val)}`);
+            const data = await res.json();
+            suggestionList.innerHTML = '';
+            data.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item;
+                suggestionList.appendChild(opt);
+            });
+        } catch (err) {
+            console.error("Suggestion error:", err);
+        }
+    });
+
+    // Task 1: 常用搜尋下拉 – 在 <details> 開啟時載入
+    {% if session.get('user_id') %}
+    var _ssLoaded = false;
+    var _ssDetails = document.getElementById('saved-search-details');
+    if (_ssDetails) {
+        _ssDetails.addEventListener('toggle', function () {
+            if (_ssDetails.open && !_ssLoaded) {
+                _ssLoaded = true;
+                refreshSavedSearches();
+            }
+        });
+    }
+
+    async function refreshSavedSearches() {
+        try {
+            const res = await fetch('{{ url_for("search.api_get_saved_searches") }}');
+            const data = await res.json();
+            var list = document.getElementById('saved-search-list');
+            list.innerHTML = '';
+            if (!data.length) {
+                list.innerHTML = '<div style="padding:0.5rem 1rem;color:#94a3b8;font-size:0.82rem">尚無儲存的常用搜尋</div>';
+                return;
+            }
+            data.forEach(function (ss) {
+                var item = document.createElement('div');
+                item.className = 'saved-search-item';
+                item.style.display = 'flex';
+                item.style.justifyContent = 'space-between';
+                item.style.alignItems = 'center';
+                item.style.padding = '8px 12px';
+                item.style.borderBottom = '1px solid #f1f5f9';
+
+                var label = document.createElement('span');
+                label.textContent = ss.name;
+                label.style.cursor = 'pointer';
+                label.style.flexGrow = '1';
+                label.title = "套用此搜尋條件";
+                label.addEventListener('click', function () {
+                    // 套用條件
+                    var url = new URL('{{ url_for("search.do_search") }}', window.location.origin);
+                    for (var key in ss.query) {
+                        if (key === 'page') continue;
+                        var val = ss.query[key];
+                        if (Array.isArray(val)) {
+                            val.forEach(v => url.searchParams.append(key, v));
+                        } else {
+                            url.searchParams.append(key, val);
+                        }
+                    }
+                    if (ss.query.data_type && !ss.query.data_types) {
+                        var dt = ss.query.data_type;
+                        if (Array.isArray(dt)) {
+                            dt.forEach(v => url.searchParams.append('data_types', v));
+                        } else {
+                            url.searchParams.append('data_types', dt);
+                        }
+                    }
+                    window.location.href = url.toString();
+                });
+
+                var delBtn = document.createElement('button');
+                delBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                delBtn.className = 'btn btn-sm btn-outline-danger';
+                delBtn.style.padding = '2px 6px';
+                delBtn.style.marginLeft = '8px';
+                delBtn.title = "刪除此紀錄";
+                delBtn.addEventListener('click', async function (e) {
+                    e.stopPropagation();
+                    if (!confirm('確定要刪除此常用搜尋紀錄嗎？')) return;
+                    try {
+                        const delRes = await fetch('{{ url_for("search.delete_saved_search", sid="SID") }}'.replace('SID', ss.id), {
+                            method: 'DELETE',
+                            headers: {'X-Requested-With': 'XMLHttpRequest'}
+                        });
+                        if (delRes.ok) {
+                            item.remove();
+                            if (list.children.length === 0) {
+                                list.innerHTML = '<div style="padding:0.5rem 1rem;color:#94a3b8;font-size:0.82rem">尚無儲存的常用搜尋</div>';
+                            }
+                        }
+                    } catch (err) {
+                        alert("刪除失敗");
+                    }
+                });
+
+                item.appendChild(label);
+                item.appendChild(delBtn);
+                list.appendChild(item);
+            });
+        } catch (err) {
+            document.getElementById('saved-search-list').innerHTML =
+                '<div style="padding:0.5rem 1rem;color:#ef4444;font-size:0.82rem">載入失敗</div>';
+        }
+    }
+    {% endif %}
+
+</script>
+{% endblock %}

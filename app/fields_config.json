@@ -1,0 +1,308 @@
+[
+  {
+    "CONFIG_ID": "1",
+    "DATA_TYPE": "史政",
+    "FIELD_NAME": "OVC_HS_NO",
+    "FIELD_LABEL": "系統唯一編號",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 1
+  },
+  {
+    "CONFIG_ID": "2",
+    "DATA_TYPE": "史政",
+    "FIELD_NAME": "OVN_HS_NAME",
+    "FIELD_LABEL": "史政標題",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 2
+  },
+  {
+    "CONFIG_ID": "3",
+    "DATA_TYPE": "史政",
+    "FIELD_NAME": "OVC_HS_SUMMARY",
+    "FIELD_LABEL": "史政摘要",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 3
+  },
+  {
+    "CONFIG_ID": "4",
+    "DATA_TYPE": "史政",
+    "FIELD_NAME": "OVN_HA_BELONG",
+    "FIELD_LABEL": "所屬單位",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 4
+  },
+  {
+    "CONFIG_ID": "5",
+    "DATA_TYPE": "史政",
+    "FIELD_NAME": "OVC_HS_PULISH_YEAE",
+    "FIELD_LABEL": "出版年度",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 5
+  },
+  {
+    "CONFIG_ID": "6",
+    "DATA_TYPE": "史政",
+    "FIELD_NAME": "OVC_GET_YEAR",
+    "FIELD_LABEL": "取得年度",
+    "SHOW_IN_LIST": "N",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 6
+  },
+  {
+    "CONFIG_ID": "7",
+    "DATA_TYPE": "史政照片",
+    "FIELD_NAME": "OVC_TO_NO",
+    "FIELD_LABEL": "系統唯一編號",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 1
+  },
+  {
+    "CONFIG_ID": "8",
+    "DATA_TYPE": "史政照片",
+    "FIELD_NAME": "OVC_TO_NAME",
+    "FIELD_LABEL": "照片標題",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 2
+  },
+  {
+    "CONFIG_ID": "9",
+    "DATA_TYPE": "史政照片",
+    "FIELD_NAME": "OVN_TO_PEOPLE",
+    "FIELD_LABEL": "相關人員",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 3
+  },
+  {
+    "CONFIG_ID": "10",
+    "DATA_TYPE": "史政照片",
+    "FIELD_NAME": "OVN_TO_SUMMARY",
+    "FIELD_LABEL": "照片摘要",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 4
+  },
+  {
+    "CONFIG_ID": "11",
+    "DATA_TYPE": "史政照片",
+    "FIELD_NAME": "OVC_TO_APPLY_DEPT1_NAME",
+    "FIELD_LABEL": "申請單位1",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 5
+  },
+  {
+    "CONFIG_ID": "12",
+    "DATA_TYPE": "史政照片",
+    "FIELD_NAME": "OVC_TO_APPLY_DEPT2_NAME",
+    "FIELD_LABEL": "申請單位2",
+    "SHOW_IN_LIST": "N",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 6
+  },
+  {
+    "CONFIG_ID": "13",
+    "DATA_TYPE": "史政照片",
+    "FIELD_NAME": "ODT_TO_DATE",
+    "FIELD_LABEL": "照片日期",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 7
+  },
+  {
+    "CONFIG_ID": "14",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVC_RP_NO",
+    "FIELD_LABEL": "系統唯一編號",
+    "SHOW_IN_LIST": "N",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 1
+  },
+  {
+    "CONFIG_ID": "15",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVN_RP_NAME",
+    "FIELD_LABEL": "標題",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 2
+  },
+  {
+    "CONFIG_ID": "16",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVN_RP_AUTHOR_LIST",
+    "FIELD_LABEL": "作者清單",
+    "SHOW_IN_LIST": "N",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 3
+  },
+  {
+    "CONFIG_ID": "17",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVN_RP_MAIN_AUTHOR",
+    "FIELD_LABEL": "主要作者",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 4
+  },
+  {
+    "CONFIG_ID": "18",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVC_RP_CSI_NAME",
+    "FIELD_LABEL": "報告號碼",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 5
+  },
+  {
+    "CONFIG_ID": "19",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVN_SUMMARY",
+    "FIELD_LABEL": "摘要",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 6
+  },
+  {
+    "CONFIG_ID": "20",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVC_HOST_NAME",
+    "FIELD_LABEL": "執行單位",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 7
+  },
+  {
+    "CONFIG_ID": "21",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVC_YEAR",
+    "FIELD_LABEL": "計畫年度",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 8
+  },
+  {
+    "CONFIG_ID": "22",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVC_SECRET_LV_NAME",
+    "FIELD_LABEL": "機密等級名稱",
+    "SHOW_IN_LIST": "N",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 9
+  },
+  {
+    "CONFIG_ID": "23",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVC_SECRET_ATTRIBUTE",
+    "FIELD_LABEL": "機密屬性",
+    "SHOW_IN_LIST": "N",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 10
+  },
+  {
+    "CONFIG_ID": "24",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVC_TRADE_SECRET_NAME",
+    "FIELD_LABEL": "工業機密名稱",
+    "SHOW_IN_LIST": "N",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 11
+  },
+  {
+    "CONFIG_ID": "25",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVC_PROMOTE_CSI_NAME",
+    "FIELD_LABEL": "推廣計畫名稱",
+    "SHOW_IN_LIST": "N",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 12
+  },
+  {
+    "CONFIG_ID": "26",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVC_TRAIN_NAME",
+    "FIELD_LABEL": "訓練名稱",
+    "SHOW_IN_LIST": "N",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 13
+  },
+  {
+    "CONFIG_ID": "27",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVN_DESCRIPTION",
+    "FIELD_LABEL": "技術描述",
+    "SHOW_IN_LIST": "N",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 14
+  },
+  {
+    "CONFIG_ID": "28",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVN_APPLICATION",
+    "FIELD_LABEL": "應用說明",
+    "SHOW_IN_LIST": "N",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 15
+  },
+  {
+    "CONFIG_ID": "29",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVC_PUBLISH_DATE",
+    "FIELD_LABEL": "發布日期",
+    "SHOW_IN_LIST": "N",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 16
+  },
+  {
+    "CONFIG_ID": "30",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVC_PUBLISH_UNIT",
+    "FIELD_LABEL": "出版單位",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 17
+  },
+  {
+    "CONFIG_ID": "31",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVC_RP_CAT_NAME",
+    "FIELD_LABEL": "計畫分類名稱",
+    "SHOW_IN_LIST": "N",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 18
+  },
+  {
+    "CONFIG_ID": "32",
+    "DATA_TYPE": "技術報告",
+    "FIELD_NAME": "OVC_RP_PAGE",
+    "FIELD_LABEL": "總頁數",
+    "SHOW_IN_LIST": "N",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 19
+  },
+  {
+    "CONFIG_ID": "33",
+    "DATA_TYPE": "逸光報",
+    "FIELD_NAME": "OVC_PAPER_ID",
+    "FIELD_LABEL": "系統唯一編號",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 1
+  },
+  {
+    "CONFIG_ID": "34",
+    "DATA_TYPE": "逸光報",
+    "FIELD_NAME": "OVN_PAPER_NAME",
+    "FIELD_LABEL": "逸光報標題",
+    "SHOW_IN_LIST": "Y",
+    "SHOW_IN_DETAIL": "Y",
+    "SORT_ORDER": 2
+  }
+]

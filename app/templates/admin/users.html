@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}帳號管理 – 機構典藏系統{% endblock %}
+{% block content %}
+<div style="background: var(--card-bg); border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.07);">
+
+    {# ── 橫向子導覽列 ── #}
+    <div class="admin-subnav" style="display: flex; gap: 10px; border-bottom: 2px solid var(--border-color); padding-bottom: 12px; margin-bottom: 2rem; flex-wrap: wrap;">
+        <a href="{{ url_for('admin.field_settings') }}" class="btn btn-sm btn-outline-secondary">前台顯示欄位控制</a>
+        <a href="{{ url_for('admin.oracle_fields_settings') }}" class="btn btn-sm btn-outline-secondary">Oracle 核心欄位配置</a>
+        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-sm btn-primary">使用者管理</a>
+        <a href="{{ url_for('search.theme_admin') }}" class="btn btn-sm btn-outline-secondary">主題館修改</a>
+        <a href="{{ url_for('admin.system_settings') }}" class="btn btn-sm btn-outline-secondary">系統組態設定</a>
+        <a href="{{ url_for('admin.audit_logs_view') }}" class="btn btn-sm btn-outline-secondary">系統稽核日誌</a>
+        <a href="{{ url_for('admin.system_health') }}" class="btn btn-sm btn-outline-secondary">系統健康度檢查</a>
+        <button id="adminDarkModeBtn" class="btn btn-sm btn-outline-secondary" style="margin-left: auto;">切換黑暗模式</button>
+    </div>
+
+    <h2 style="color: var(--primary-color); margin-bottom: 0.5rem;">帳號管理介面</h2>
+    <hr style="margin-bottom: 1.5rem; border-color: var(--border-color);">
+
+    {# ── Task 3: 搜尋 + 分頁資訊列 ── #}
+    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <form action="{{ url_for('admin.manage_users') }}" method="GET"
+              style="display: flex; gap: 8px; flex: 1;" data-no-overlay="true">
+            <input type="text" name="q" id="user-search-input"
+                   value="{{ q_search }}"
+                   placeholder="搜尋帳號 ID 或使用者名稱..."
+                   class="search-input"
+                   style="flex: 1; min-width: 200px; font-size: 0.95rem; padding: 0.6rem 1rem; border-radius: 8px;">
+            <button type="submit" class="btn" style="padding: 0.6rem 1.5rem; border-radius: 8px;">搜尋</button>
+            {% if q_search %}
+            <a href="{{ url_for('admin.manage_users') }}"
+               class="btn" style="background: #64748b; padding: 0.6rem 1rem; border-radius: 8px;">清除</a>
+            {% endif %}
+        </form>
+        <span style="font-size: 0.85rem; color: #64748b; white-space: nowrap;">
+            共 <strong>{{ total_users }}</strong> 筆 ／ 第 {{ page }} / {{ total_pages }} 頁
+        </span>
+    </div>
+
+    {# ── 新增帳號 ── #}
+    <h4 style="margin-bottom: 0.75rem; color: #334155;">新增帳號</h4>
+    <form action="{{ url_for('admin.manage_users') }}" method="POST"
+          style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2rem;"
+          data-no-overlay="true">
+        <input type="hidden" name="action" value="add">
+        <input type="text"     name="user_id"  class="form-control" placeholder="登入帳號 ID"  required style="max-width: 160px;">
+        <input type="text"     name="username" class="form-control" placeholder="使用者名稱"    required style="max-width: 160px;">
+        <input type="password" name="password" class="form-control" placeholder="密碼"         required style="max-width: 160px;">
+        <select name="role" class="form-control" style="max-width: 200px;">
+            <option value="testuser">一般使用者 (testuser)</option>
+            <option value="topicadmin">主題館管理 (topicadmin)</option>
+            <option value="admin">系統管理員 (admin)</option>
+        </select>
+        <button type="submit" class="btn" style="padding: 0.6rem 1.5rem; border-radius: 8px;">新增</button>
+    </form>
+
+    {# ── 現有帳號列表 ── #}
+    <h4 style="margin-bottom: 0.75rem; color: #334155;">現有帳號列表</h4>
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+            <thead>
+                <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
+                    <th style="padding: 10px 12px; text-align: left; white-space: nowrap;">帳號 ID</th>
+                    <th style="padding: 10px 12px; text-align: left;">使用者名稱</th>
+                    <th style="padding: 10px 12px; text-align: left;">角色</th>
+                    <th style="padding: 10px 12px; text-align: left; min-width: 340px;">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 10px 12px; font-family: monospace; color: #0369a1;">{{ u.USER_ID }}</td>
+                    <td style="padding: 10px 12px;">{{ u.USERNAME }}</td>
+                    <td style="padding: 10px 12px;">
+                        <span style="padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;
+                              background: {% if u.ROLE == 'admin' %}#fee2e2{% elif u.ROLE == 'topicadmin' %}#dcfce7{% else %}#f1f5f9{% endif %};
+                              color: {% if u.ROLE == 'admin' %}#991b1b{% elif u.ROLE == 'topicadmin' %}#166534{% else %}#475569{% endif %};">
+                            {{ u.ROLE }}
+                        </span>
+                    </td>
+                    <td style="padding: 10px 12px;">
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                            {# 重設密碼 #}
+                            <form action="{{ url_for('admin.manage_users') }}" method="POST"
+                                  style="display: flex; gap: 6px;" data-no-overlay="true">
+                                <input type="hidden" name="action" value="reset">
+                                <input type="hidden" name="user_id" value="{{ u.USER_ID }}">
+                                <input type="password" name="password" placeholder="新密碼"
+                                       required class="form-control" style="width: 130px; font-size: 0.82rem; padding: 4px 8px;">
+                                <button type="submit" class="btn"
+                                        style="background:#f59e0b; padding: 4px 10px; border-radius: 6px; font-size:0.82rem;">
+                                    重設密碼
+                                </button>
+                            </form>
+                            {# 刪除 #}
+                            <form action="{{ url_for('admin.manage_users') }}" method="POST"
+                                  style="display:inline;"
+                                  onsubmit="return confirm('確定要刪除帳號「{{ u.USER_ID }}」嗎？此操作無法復原。');"
+                                  data-no-overlay="true">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="user_id" value="{{ u.USER_ID }}">
+                                <button type="submit" class="btn"
+                                        style="background:#ef4444; padding: 4px 10px; border-radius: 6px; font-size:0.82rem;">
+                                    刪除
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 2rem; color: #94a3b8;">
+                        {% if q_search %}查無符合「{{ q_search }}」的帳號。{% else %}目前無帳號資料。{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# ── Task 3: 分頁導航 ── #}
+    {% if total_pages > 1 %}
+    <div class="pagination" style="margin-top: 1.5rem;">
+        {% if page > 1 %}
+        <a href="{{ url_for('admin.manage_users', page=page-1, q=q_search) }}" class="page-link">上一頁</a>
+        {% endif %}
+
+        {% set start_p = [1, page-3]|max %}
+        {% set end_p   = [total_pages, page+3]|min %}
+        {% for p in range(start_p, end_p+1) %}
+        <a href="{{ url_for('admin.manage_users', page=p, q=q_search) }}"
+           class="page-link {% if p == page %}active{% endif %}">{{ p }}</a>
+        {% endfor %}
+
+        {% if page < total_pages %}
+        <a href="{{ url_for('admin.manage_users', page=page+1, q=q_search) }}" class="page-link">下一頁</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{
+  "add_book_url": "https://www.test.com.tw",
+  "custom_field_names": {
+    "OVN_RP_NAME": "報告名稱"
+  },
+  "detail_fields": [
+    "OVC_RP_NO",
+    "OVN_RP_NAME",
+    "OVN_RP_AUTHOR_LIST",
+    "OVN_RP_MAIN_AUTHOR",
+    "OVN_SUMMARY",
+    "OVC_YEAR",
+    "OVC_SECRET_LV_CDE",
+    "OVC_SECRET_LV_NAME",
+    "OVC_SECRET_ATTRIBUTE",
+    "OVC_TRADE_SECRET_NAME",
+    "OVC_PROMOTE_CSI_NAME",
+    "OVC_TRAIN_NAME",
+    "OVN_DESCRIPTION",
+    "OVN_APPLICATION",
+    "OVC_PUBLISH_DATE",
+    "OVC_PUBLISH_UNIT",
+    "ODT_PUBLIC_DATE",
+    "OVN_RP_AUTHOR",
+    "OVC_RP_LIB_TITLE",
+    "OVC_RP_OTHER_TITLE"
+  ],
+  "list_fields": [
+    "OVC_RP_NO",
+    "OVN_RP_NAME",
+    "OVN_RP_AUTHOR_LIST",
+    "OVC_PUBLISH_DATE"
+  ],
+  "news": [
+    {
+      "content": "企業零信任架構轉型中。",
+      "id": 1,
+      "title": "關鍵字查詢系統改版上線"
+    },
+    {
+      "content": "測試最新消息測試最新消息測試最新消息測試最新消息測試最新消息",
+      "id": 2,
+      "title": "測試最新消息"
+    }
+  ],
+  "templates": [
+    {
+      "filename": "技術報告上傳格式.docx",
+      "id": 1,
+      "url": "#"
+    },
+    {
+      "filename": "技術報告作業規定",
+      "id": 2,
+      "url": "https://www.test123.com.tw"
+    }
+  ],
+  "theme_list_fields": [
+    "OVN_RP_NAME",
+    "OVN_RP_AUTHOR_LIST"
+  ],
+  "system_theme": "light",
+  "auth_mode": "password",
+  "maintenance_mode": false,
+  "footer_text": "本館地址：100201 臺北市20號 電話：02-2361-9132 （本系統服務窗口請轉分機 172、870）",
+  "level_change_desc": "",
+  "sso_client_id": "",
+  "sso_client_secret": "",
+  "sso_auth_url": "",
+  "sso_token_url": "",
+  "sso_user_info_url": "",
+  "search_mode": "cache",
+  "search_blacklist": "羅主要作者"
+}

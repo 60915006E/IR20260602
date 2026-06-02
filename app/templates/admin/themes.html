@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}主題館設定{% end block %}
+{% block content %}
+<h2>📁 新增 / 編輯 主題館</h2>
+{% if msg %}
+<div class="alert alert-success">{{ msg }}</div>
+{% endif %}
+
+<div class="card my-4">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('admin.theme_settings') }}">
+            <div class="mb-3">
+                <label for="theme_title" class="form-label">主題館名稱 (標題)</label>
+                <input type="text" class="form-control" id="theme_title" name="theme_title" required placeholder="例如: 航空發展史">
+            </div>
+            
+            <div class="mb-3">
+                <label for="theme_filename" class="form-label">檔案名稱 (英數)</label>
+                <input type="text" class="form-control" id="theme_filename" name="theme_filename" required placeholder="例如: aviation_history.json">
+            </div>
+            
+            <div class="mb-3">
+                <label for="theme_ids" class="form-label">系統號列表 (請以逗號或斷行分隔)</label>
+                <textarea class="form-control" id="theme_ids" name="theme_ids" rows="5" required placeholder="例如: &#10;A001&#10;A002&#10;A003"></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">儲存主題館</button>
+        </form>
+    </div>
+</div>
+
+<h3>現有主題館檔案列表</h3>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>檔案名稱</th>
+            <th>動作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for t in themes %}
+        <tr>
+            <td>{{ t }}</td>
+            <td>
+                <a href="{{ url_for('search.theme_view', theme_name=t|replace('.json', '')) }}" target="_blank" class="btn btn-sm btn-info">預覽</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="2">目前尚無主題館</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% end block %}
