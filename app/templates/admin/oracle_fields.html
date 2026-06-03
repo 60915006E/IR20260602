@@ -43,7 +43,7 @@
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem; text-align: left;">
             <thead>
                 <tr style="background: #f8fafc;">
-                    <th style="padding: 1rem; border-bottom: 1px solid var(--border-color);">資料分類</th>
+                    <th style="padding: 1rem; border-bottom: 1px solid var(--border-color); white-space: nowrap;">資料分類</th>
                     <th style="padding: 1rem; border-bottom: 1px solid var(--border-color);">Oracle 資料表</th>
                     <th style="padding: 1rem; border-bottom: 1px solid var(--border-color);">真實欄位</th>
                     <th style="padding: 1rem; border-bottom: 1px solid var(--border-color);">前台標籤名稱</th>
@@ -55,7 +55,7 @@
             <tbody>
                 {% for f in fields %}
                 <tr>
-                    <td style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 1rem; border-bottom: 1px solid var(--border-color); white-space: nowrap;">
                         <span class="card-type type-{{ f.DATA_TYPE }}">{{ f.DATA_TYPE }}</span>
                     </td>
                     <td style="padding: 1rem; border-bottom: 1px solid var(--border-color); font-family: monospace; font-size: 0.9rem; color: #475569;">{{ f.TABLE_NAME }}</td>
@@ -90,12 +90,13 @@
         {# ── 二階段驗證與儲存 ── #}
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <div style="display: flex; align-items: center; gap: 10px;">
-                <label style="font-weight: 600; color: #334155; margin: 0;">🔑 輸入二階段操作安全密碼：</label>
+                <label style="font-weight: 600; color: #334155; margin: 0;"> 輸入二階段操作安全密碼：</label>
                 <input type="password" name="sec_key" id="secKey" class="form-control" style="width: 250px;" required {% if has_sec_pwd == 'N' %}disabled{% endif %} placeholder="請輸入安全操作密碼">
             </div>
-            <div style="display: flex; gap: 1rem;">
-                <a href="{{ url_for('search.index') }}" class="btn" style="background: white; color: var(--text-color); border: 1px solid var(--border-color);">返回前台</a>
-                <button class="btn" type="submit" {% if has_sec_pwd == 'N' %}disabled{% endif %} style="background: var(--primary-color); color: white;">儲存核心設定</button>
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                <button class="btn" type="button" onclick="triggerSyncCache()" {% if has_sec_pwd == 'N' %}disabled{% endif %} style="background: #eab308; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 4px; cursor: pointer;">手動重整快取</button>
+                <a href="{{ url_for('search.index') }}" class="btn" style="background: white; color: var(--text-color); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 4px; text-decoration: none;">返回前台</a>
+                <button class="btn" type="submit" {% if has_sec_pwd == 'N' %}disabled{% endif %} style="background: var(--primary-color); color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 4px; cursor: pointer;">儲存核心設定</button>
             </div>
         </div>
     </form>
@@ -170,7 +171,7 @@ const tableMappings = {
     "技術報告": "VI_IRLIB_REPORT_MAIN",
     "史政": "VI_IRLIB_HISTORY_MAIN",
     "史政照片": "VI_IRLIB_PHOTO_MAIN",
-    "逸光報": "VI_IRLIB_PAPER_MAIN"
+    "逸光報": "VI_IRLIB_PAPER"
 };
 
 function autoFillTable() {
@@ -197,12 +198,34 @@ function closeDeleteModal() {
 }
 
 function validateAddForm() {
-    const pwd = document.getElementById("addSecKey").value.strip();
+    const pwd = document.getElementById("addSecKey").value.trim();
     if (!pwd) {
         alert("必須輸入安全密碼以執行二階段驗證。");
         return false;
     }
     return true;
+}
+
+function triggerSyncCache() {
+    const secKeyVal = document.getElementById("secKey").value.trim();
+    if (!secKeyVal) {
+        alert("必須先輸入「二階段操作安全密碼」，才能執行快取重整作業。");
+        return;
+    }
+    if (confirm("確定要重整本地快取資料庫嗎？此操作將清空現有快取並從 Oracle 19c 重新下載全量資料，可能需要數秒時間。")) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{{ url_for('admin.sync_cache') }}";
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'sec_key';
+        input.value = secKeyVal;
+        
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
 }
 </script>
 {% endblock %}

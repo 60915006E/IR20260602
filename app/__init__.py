@@ -35,7 +35,7 @@ def create_app(config_class=Config):
         if config.get('maintenance_mode', False):
             role = str(session.get('role') or '').lower()
             if role != 'admin':
-                return render_template('maintenance.html'), 503
+                return render_template('fix.html'), 503
 
     @app.template_filter('highlight')
     def highlight_filter(text, keyword):

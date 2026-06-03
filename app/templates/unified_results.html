@@ -126,6 +126,7 @@
     <!-- Right Sidebar -->
     <div style="width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 1.5rem;">
         <!-- Word Cloud -->
+        {% if portal_config.get('show_wordcloud', True) %}
         <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
             <h3 style="margin-bottom: 1rem; color: var(--primary-color); font-size: 1.1rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem;">檢索結果文字雲</h3>
             <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; min-height: 150px;">
@@ -137,6 +138,7 @@
                 {% endif %}
             </div>
         </div>
+        {% endif %}
         
         <!-- Facets: Data Type -->
         <div style="background: var(--card-bg); padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
@@ -152,7 +154,7 @@
                 <p style="color: #94a3b8; font-size: 0.9rem;">無資料類型統計</p>
                 {% endif %}
                 {% if selected_types %}
-                <a href="{{ url_for('search.do_search', q=q, year=year, dept=dept, sort=sort) }}" style="text-align: center; font-size: 0.85rem; color: #ef4444; margin-top: 0.5rem; text-decoration: none; padding: 0.4rem; background: #fee2e2; border-radius: 6px;">✖ 清除資料類型篩選</a>
+                <a href="{{ url_for('search.do_search', q=q, year=year, dept=dept, sort=sort) }}" style="text-align: center; font-size: 0.85rem; color: #ef4444; margin-top: 0.5rem; text-decoration: none; padding: 0.4rem; background: #fee2e2; border-radius: 6px;"> 清除資料類型篩選</a>
                 {% endif %}
             </div>
         </div>
@@ -171,7 +173,7 @@
                 <p style="color: #94a3b8; font-size: 0.9rem;">無年度資料</p>
                 {% endif %}
                 {% if year %}
-                <a href="{{ url_for('search.do_search', q=q, dept=dept, sort=sort, data_types=selected_types) }}" style="text-align: center; font-size: 0.85rem; color: #ef4444; margin-top: 0.5rem; text-decoration: none; padding: 0.4rem; background: #fee2e2; border-radius: 6px;">✖ 清除年度篩選</a>
+                <a href="{{ url_for('search.do_search', q=q, dept=dept, sort=sort, data_types=selected_types) }}" style="text-align: center; font-size: 0.85rem; color: #ef4444; margin-top: 0.5rem; text-decoration: none; padding: 0.4rem; background: #fee2e2; border-radius: 6px;"> 清除年度篩選</a>
                 {% endif %}
             </div>
         </div>
@@ -190,7 +192,7 @@
                 <p style="color: #94a3b8; font-size: 0.9rem;">無單位資料</p>
                 {% endif %}
                 {% if dept %}
-                <a href="{{ url_for('search.do_search', q=q, year=year, sort=sort, data_types=selected_types) }}" style="text-align: center; font-size: 0.85rem; color: #ef4444; margin-top: 0.5rem; text-decoration: none; padding: 0.4rem; background: #fee2e2; border-radius: 6px;">✖ 清除單位篩選</a>
+                <a href="{{ url_for('search.do_search', q=q, year=year, sort=sort, data_types=selected_types) }}" style="text-align: center; font-size: 0.85rem; color: #ef4444; margin-top: 0.5rem; text-decoration: none; padding: 0.4rem; background: #fee2e2; border-radius: 6px;"> 清除單位篩選</a>
                 {% endif %}
             </div>
         </div>

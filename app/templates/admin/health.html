@@ -32,7 +32,10 @@
             <h4 style="color: #475569; margin-top: 0; font-weight: 600; font-size: 1.1rem;">GLOBAL_SEARCH_INDEX 快取狀態</h4>
             <p style="margin: 5px 0; font-size: 0.95rem; color: #334155;">目前快取總數：<strong style="font-size: 1.3rem; color: #0284c7;">{{ idx_count }}</strong> 筆</p>
             <p style="margin: 5px 0; font-size: 0.95rem; color: #334155;">最後增量同步：<strong>{{ last_sync }}</strong></p>
-            <small style="color: #64748b;">快取層使用 SQLite WAL 高併發讀寫模式，每 3 分鐘增量更新。</small>
+            <div style="margin: 8px 0 12px 0;">
+                <button type="button" onclick="triggerSyncCache()" style="background: #eab308; color: white; border: none; font-weight: 600; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">立即手動重整快取</button>
+            </div>
+            <small style="color: #64748b; display: block;">快取層使用 SQLite WAL 高併發讀寫模式，每 3 分鐘增量更新。</small>
         </div>
     </div>
     
@@ -60,4 +63,29 @@
         </table>
     </div>
 </div>
+
+<script>
+function triggerSyncCache() {
+    const pwd = prompt("此操作為高安全權限之「快取重整」！\\n請輸入二階段操作安全密碼：");
+    if (pwd === null) return;
+    if (!pwd.trim()) {
+        alert("密碼不可為空！");
+        return;
+    }
+    if (confirm("確定要重整本地快取資料庫嗎？此操作將清空現有快取並從 Oracle 19c 重新下載全量資料。")) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{{ url_for('admin.sync_cache') }}";
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'sec_key';
+        input.value = pwd.trim();
+        
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
 {% endblock %}

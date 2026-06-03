@@ -2,7 +2,7 @@
 {% block title %}系統後台 - 前台顯示欄位控制{% endblock %}
 
 {% block content %}
-<div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 900px; margin: 2rem auto;">
+<div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 1000px; margin: 2rem auto;">
     
     {# ── 橫向子導覽列 ── #}
     <div class="admin-subnav" style="display: flex; gap: 10px; border-bottom: 2px solid var(--border-color); padding-bottom: 12px; margin-bottom: 2rem; flex-wrap: wrap;">
@@ -29,18 +29,20 @@
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem; text-align: left;">
             <thead>
                 <tr style="background: #f8fafc;">
-                    <th style="padding: 1rem; border-bottom: 1px solid var(--border-color);">資料分類</th>
+                    <th style="padding: 1rem; border-bottom: 1px solid var(--border-color); white-space: nowrap;">資料分類</th>
                     <th style="padding: 1rem; border-bottom: 1px solid var(--border-color);">真實欄位</th>
                     <th style="padding: 1rem; border-bottom: 1px solid var(--border-color);">前台標籤</th>
                     <th style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center;">簡目頁顯示欄位</th>
                     <th style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center;">詳目頁顯示欄位</th>
+                    <th style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center;">進階搜尋條件</th>
+                    <th style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center;">主題館搜尋條件</th>
                     <th style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center; width: 80px;">排序</th>
                 </tr>
             </thead>
             <tbody>
                 {% for f in fields %}
                 <tr>
-                    <td style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 1rem; border-bottom: 1px solid var(--border-color); white-space: nowrap;">
                         <span class="card-type type-{{ f.DATA_TYPE }}">{{ f.DATA_TYPE }}</span>
                     </td>
                     <td style="padding: 1rem; border-bottom: 1px solid var(--border-color); font-family: monospace; color: #475569;">{{ f.FIELD_NAME }}</td>
@@ -52,6 +54,12 @@
                     </td>
                     <td style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center;">
                         <input type="checkbox" name="detail_{{ f.CONFIG_ID }}" {% if f.SHOW_IN_DETAIL == 'Y' %}checked{% endif %} style="transform: scale(1.5);">
+                    </td>
+                    <td style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center;">
+                        <input type="checkbox" name="adv_{{ f.CONFIG_ID }}" {% if f.ALLOW_ADVANCED == 'Y' or f.ALLOW_ADVANCED is not defined %}checked{% endif %} style="transform: scale(1.5);">
+                    </td>
+                    <td style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center;">
+                        <input type="checkbox" name="theme_{{ f.CONFIG_ID }}" {% if f.ALLOW_THEME == 'Y' or f.ALLOW_THEME is not defined %}checked{% endif %} style="transform: scale(1.5);">
                     </td>
                     <td style="padding: 1rem; border-bottom: 1px solid var(--border-color); text-align: center;">
                         <input type="number" name="sort_{{ f.CONFIG_ID }}" value="{{ f.SORT_ORDER or 999 }}" class="form-control" style="width: 70px; display: inline-block; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; text-align: center;">

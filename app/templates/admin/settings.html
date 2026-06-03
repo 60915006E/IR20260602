@@ -48,7 +48,7 @@
             </div>
             
             <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 1rem;">
-                <h5 style="color: #b45309; margin-top: 0; margin-bottom: 0.5rem; font-weight: 600;">🔗 憑證卡單一登入 (OAuth 2.0 / SSO) 參數配置</h5>
+                <h5 style="color: #b45309; margin-top: 0; margin-bottom: 0.5rem; font-weight: 600;"> 憑證卡單一登入 (OAuth 2.0 / SSO) 參數配置</h5>
                 <p style="color: #b45309; font-size: 0.85rem; margin-bottom: 1rem;">本系統使用 OAuth 2.0 與公司內部的中華電信認證伺服器對接。以下終端點 (Endpoints) 在公司網路內部必須能正常連通。</p>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
@@ -89,7 +89,7 @@
                 <label style="display: block; font-weight: 600; color: #14532d; margin-bottom: 0.5rem;">公告說明文字：</label>
                 <textarea name="level_change_desc" class="form-control" rows="4" placeholder="請在此輸入當技術報告有等級證明變更時，需要動態展現於下載按鈕上方的公告說明..." style="resize: vertical; font-family: sans-serif; font-size: 0.95rem;">{{ config.get('level_change_desc', '') }}</textarea>
                 <small style="color: #166534; display: block; margin-top: 0.5rem; font-size: 0.85rem;">
-                    💡 <b>機制說明：</b>當前台讀者瀏覽某篇「技術報告」的詳目資訊時，系統會自動比對 Oracle 中的 <b>VI_IRLIB_RP_PROVEDATA</b> 等級證明關聯表。若該報告存在證明資料，系統將會在下載檔案按鈕上方，即時展示您於此處所設定的公告文字。若無證明資料，該區塊將自動隱藏，確保資料呈現精準性。
+                     <b>機制說明：</b>當前台讀者瀏覽某篇「技術報告」的詳目資訊時，系統會自動比對 Oracle 中的 <b>VI_IRLIB_RP_PROVEDATA</b> 等級證明關聯表。若該報告存在證明資料，系統將會在下載檔案按鈕上方，即時展示您於此處所設定的公告文字。若無證明資料，該區塊將自動隱藏，確保資料呈現精準性。
                 </small>
             </div>
         </div>
@@ -118,7 +118,21 @@
             <div style="margin-top: 1.5rem; border-top: 1px dashed #cbd5e1; padding-top: 1.5rem;">
                 <label style="display: block; font-weight: 600; color: #334155; margin-bottom: 0.5rem;">熱門搜尋黑名單 (以逗號或換行分隔)：</label>
                 <textarea name="search_blacklist" class="form-control" rows="3" placeholder="例如: 測試, test, 密碼" style="resize: vertical; font-family: sans-serif; font-size: 0.95rem;">{{ config.get('search_blacklist', '') }}</textarea>
-                <small style="color: #64748b; display: block; margin-top: 0.5rem;">在此設定的關鍵字，將不會出現在前台首頁「近期熱門搜尋」以及搜尋列的自動推薦 (autocomplete) 中。</small>
+                <small style="color: #64748b; display: block; margin-top: 0.5rem;">在此設定的關鍵字，將不會出記在前台首頁「近期熱門搜尋」以及搜尋列的自動推薦 (autocomplete) 中。</small>
+            </div>
+            <div style="margin-top: 1.5rem; border-top: 1px dashed #cbd5e1; padding-top: 1.5rem;">
+                <label style="display: flex; align-items: center; font-weight: 600; color: #334155; cursor: pointer;">
+                    <input type="checkbox" name="show_wordcloud" {% if config.get('show_wordcloud', True) %}checked{% endif %} style="transform: scale(1.3); margin-right: 10px;">
+                    在前台首頁呈現「近期熱門搜尋」文字雲
+                </label>
+                <small style="color: #64748b; display: block; margin-top: 0.5rem; margin-left: 25px;">開啟後，前台首頁將會展示由讀者檢索歷史動態生成之「近期熱門搜尋」詞彙雲；關閉則隱藏該區塊。</small>
+            </div>
+            <div style="margin-top: 1.5rem; border-top: 1px dashed #cbd5e1; padding-top: 1.5rem; background: #fff1f2; padding: 1rem; border-radius: 6px; border: 1px solid #fecdd3;">
+                <label style="display: flex; align-items: center; font-weight: 600; color: #991b1b; cursor: pointer;">
+                    <input type="checkbox" name="maintenance_mode" {% if config.get('maintenance_mode') %}checked{% endif %} style="transform: scale(1.3); margin-right: 10px;">
+                    啟動全站「維護作業中」維修模式
+                </label>
+                <small style="color: #991b1b; display: block; margin-top: 0.5rem; margin-left: 25px;">開啟後，一般使用者（讀者）存取任何頁面皆會被重導向至獨立的 <b>網站維護中</b> (fix.html) 公告頁面。管理員（admin）則不受此限制，仍可正常操作進行維護與測試。</small>
             </div>
         </div>
 

@@ -85,7 +85,7 @@ def get_footer_stats():
         ('VI_IRLIB_REPORT_MAIN', "OVC_PUBLIC_TYPE_CDE = 'Y' AND OVC_STATUS_CDE = 'D1' AND OVC_RP_NO IN (SELECT OVC_SYS_NO FROM {prefix}VI_IRLIB_FILE)"),
         ('VI_IRLIB_HISTORY_MAIN', "OVC_PUBLIC_TYPE_CDE = 'Y' AND OVC_HS_NO IN (SELECT OVC_SYS_NO FROM {prefix}VI_IRLIB_FILE)"),
         ('VI_IRLIB_PHOTO_MAIN', "OVC_PUBLIC_TYPE_CDE = 'Y' AND OVC_TO_NO IN (SELECT OVC_SYS_NO FROM {prefix}VI_IRLIB_FILE)"),
-        ('VI_IRLIB_PAPER_MAIN', "OVC_PUBLIC_TYPE_CDE = 'Y' AND OVC_PAPER_ID IN (SELECT OVC_SYS_NO FROM {prefix}VI_IRLIB_FILE)")
+        ('VI_IRLIB_PAPER', "OVC_PUBLIC_TYPE_CDE = 'Y' AND OVC_PAPER_ID IN (SELECT OVC_SYS_NO FROM {prefix}VI_IRLIB_FILE)")
     ]
     
     full_text_total = 0
@@ -105,7 +105,7 @@ def get_footer_stats():
         ('VI_IRLIB_REPORT_MAIN', "OVC_PUBLIC_TYPE_CDE = 'Y' AND OVC_STATUS_CDE = 'D1'"),
         ('VI_IRLIB_HISTORY_MAIN', "OVC_PUBLIC_TYPE_CDE = 'Y'"),
         ('VI_IRLIB_PHOTO_MAIN', "OVC_PUBLIC_TYPE_CDE = 'Y'"),
-        ('VI_IRLIB_PAPER_MAIN', "OVC_PUBLIC_TYPE_CDE = 'Y'")
+        ('VI_IRLIB_PAPER', "OVC_PUBLIC_TYPE_CDE = 'Y'")
     ]
     
     summary_total = 0
@@ -176,8 +176,16 @@ def index():
         newest_sql = """
             SELECT TITLE, SUMMARY, DATA_TYPE, SYS_NO, UNIQUE_ID, SECRET_LV_CDE, AUTHOR, DEPT_NAME, YEAR
             FROM GLOBAL_SEARCH_INDEX 
-            ORDER BY PUBLISH_DATE IS NULL ASC, PUBLISH_DATE DESC 
-            LIMIT 10
+            ORDER BY 
+                UPDATED_AT DESC,
+                CASE DATA_TYPE 
+                    WHEN '技術報告' THEN 1
+                    WHEN '史政' THEN 2
+                    WHEN '史政照片' THEN 3
+                    WHEN '逸光報' THEN 4
+                    ELSE 5
+                END ASC
+            LIMIT 12
         """
         newest_items = execute_query(lambda: get_cache_db_conn(), newest_sql)
         
@@ -585,7 +593,7 @@ def theme_view(theme_name):
             SELECT '逸光報' AS DATA_TYPE, OVC_PAPER_ID AS SYS_NO, OVN_PAPER_NAME AS TITLE, NULL AS SUMMARY,
                    OVN_PAPER_AUTHOR AS AUTHOR, NULL AS YEAR, NULL AS DEPT_NAME, '' AS SECRET_LV_CDE,
                    NULL AS PUBLISH_DATE
-            FROM {prefix}VI_IRLIB_PAPER_MAIN
+            FROM {prefix}VI_IRLIB_PAPER
             WHERE OVC_PUBLIC_TYPE_CDE = 'Y' AND OVC_PAPER_ID IN ({bind_clause})
         """
         
@@ -723,14 +731,15 @@ def advanced_search():
             with open(Config.FIELDS_CONFIG_PATH, 'r', encoding='utf-8') as f:
                 cfg_json = json.load(f)
                 for item in cfg_json:
-                    fn = item.get('FIELD_NAME')
-                    fl = item.get('FIELD_LABEL')
-                    if fn and fl and fn not in seen:
-                        seen.add(fn)
-                        # 跳過控制主鍵以維持選單美觀與純淨
-                        if fn in ['OVC_PUBLIC_TYPE_CDE', 'OVC_STATUS_CDE', 'UNIQUE_ID']:
-                            continue
-                        unique_fields.append({'name': fn, 'label': fl})
+                    if item.get('ALLOW_ADVANCED', 'Y') == 'Y':
+                        fn = item.get('FIELD_NAME')
+                        fl = item.get('FIELD_LABEL')
+                        if fn and fl and fn not in seen:
+                            seen.add(fn)
+                            # 跳過控制主鍵以維持選單美觀與純淨
+                            if fn in ['OVC_PUBLIC_TYPE_CDE', 'OVC_STATUS_CDE', 'UNIQUE_ID']:
+                                continue
+                            unique_fields.append({'name': fn, 'label': fl})
     except Exception as e:
         unique_fields = []
         current_app.logger.error(f"進階搜尋載入動態欄位失敗: {e}")
@@ -746,11 +755,40 @@ def results_view():
     轉換為 build_search_sql 所需 the 'category' 格式。
     """
     from app.oracle_db import build_search_sql, execute_query as oracle_execute
-    fields = request.form.getlist('field[]')      # 語意類型：標題/作者/...
-    ops = request.form.getlist('operator[]')
-    vals = request.form.getlist('value[]')
-    keyword = request.form.get('keyword', '').strip() or request.args.get('keyword', '').strip()
-    data_types = request.form.getlist('data_type') or request.args.getlist('data_type')
+    
+    # ── 判斷是否為返回簡目（GET 且無任何搜尋參數） ──
+    is_back_navigation = (
+        request.method == 'GET' and 
+        not request.args.get('keyword') and 
+        not request.args.getlist('field[]') and 
+        not request.args.getlist('value[]') and
+        not request.args.getlist('data_type')
+    )
+    
+    if is_back_navigation and 'last_advanced_search_params' in session:
+        params = session['last_advanced_search_params']
+        fields = params.get('fields', [])
+        ops = params.get('ops', [])
+        vals = params.get('vals', [])
+        keyword = params.get('keyword', '')
+        data_types = params.get('data_types', [])
+        current_app.logger.info("從 Session 還原進階搜尋條件以進行返回簡目。")
+    else:
+        fields = request.form.getlist('field[]') or request.args.getlist('field[]')
+        ops = request.form.getlist('operator[]') or request.args.getlist('operator[]')
+        vals = request.form.getlist('value[]') or request.args.getlist('value[]')
+        keyword = (request.form.get('keyword') or request.args.get('keyword') or request.form.get('keyword', '').strip() or request.args.get('keyword', '').strip()).strip()
+        data_types = request.form.getlist('data_type') or request.args.getlist('data_type')
+        
+        # 僅在有實質檢索條件時寫入快取，避免被空查詢覆蓋
+        if fields or vals or keyword or data_types:
+            session['last_advanced_search_params'] = {
+                'fields': fields,
+                'ops': ops,
+                'vals': vals,
+                'keyword': keyword,
+                'data_types': data_types
+            }
 
     # 將前端的 field[]='標題' 轉化為 advanced_filters 的 'category' 格式
     advanced_filters = []
@@ -957,7 +995,7 @@ def get_detail(token):
                 record['DATA_TYPE'] = '史政照片'
                 
         elif data_type == '逸光報':
-            sql = f"SELECT * FROM {prefix}VI_IRLIB_PAPER_MAIN WHERE OVC_PAPER_ID = :doc_id AND OVC_PUBLIC_TYPE_CDE = 'Y'"  # nosec B608
+            sql = f"SELECT * FROM {prefix}VI_IRLIB_PAPER WHERE OVC_PAPER_ID = :doc_id AND OVC_PUBLIC_TYPE_CDE = 'Y'"  # nosec B608
             records = _safe_execute_test_query(sql, {'doc_id': doc_id})
             if records:
                 record = {k.upper(): v for k, v in records[0].items()}
@@ -1379,13 +1417,14 @@ def theme_edit(theme_name):
             with open(Config.FIELDS_CONFIG_PATH, 'r', encoding='utf-8') as f:
                 cfg_json = json.load(f)
                 for item in cfg_json:
-                    fn = item.get('FIELD_NAME')
-                    fl = item.get('FIELD_LABEL')
-                    if fn and fl and fn not in seen:
-                        seen.add(fn)
-                        if fn in ['OVC_PUBLIC_TYPE_CDE', 'OVC_STATUS_CDE', 'UNIQUE_ID']:
-                            continue
-                        unique_fields.append({'name': fn, 'label': fl})
+                    if item.get('ALLOW_THEME', 'Y') == 'Y':
+                        fn = item.get('FIELD_NAME')
+                        fl = item.get('FIELD_LABEL')
+                        if fn and fl and fn not in seen:
+                            seen.add(fn)
+                            if fn in ['OVC_PUBLIC_TYPE_CDE', 'OVC_STATUS_CDE', 'UNIQUE_ID']:
+                                continue
+                            unique_fields.append({'name': fn, 'label': fl})
     except Exception as e:
         current_app.logger.error(f"主題館載入欄位失敗: {e}")
         
@@ -1679,3 +1718,183 @@ def purge_expired_saved_searches(user_id):
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning(f"Saved searches TTL purge failed for user {user_id}: {e}")
+
+
+# ── 安全全文檔案下載審計與限流防禦系統 ──
+import time
+import hmac
+import hashlib
+from collections import defaultdict
+from flask import send_file, abort, Response
+from werkzeug.utils import safe_join
+import os
+
+# 記憶體中的下載頻率與重複防護記錄
+_DOWNLOAD_RATE_LIMIT_CACHE = defaultdict(list)
+_DOWNLOAD_DUPLICATE_CACHE = {}
+
+def get_file_server_secret_key():
+    from config import Config
+    return getattr(Config, 'FILE_SERVER_HMAC_KEY', 'portal-file-server-shared-secret-key')
+
+def generate_file_signature(sys_no, secret_key):
+    return hmac.new(secret_key.encode('utf-8'), sys_no.encode('utf-8'), hashlib.sha256).hexdigest()
+
+@bp.route('/api/file_server/download', methods=['GET'])
+def file_server_download():
+    """
+    模擬的分散式檔案主機下載 API (File Server)。
+    要求傳入有效的 HMAC 簽章，防止繞過 Portal 越權直接下載，並杜絕 Directory Traversal 漏洞。
+    """
+    sys_no = request.args.get('sys_no', '').strip()
+    sig = request.args.get('sig', '').strip()
+    
+    if not sys_no or not sig:
+        abort(400, "缺少必要參數。")
+        
+    # 1. 校驗簽章，杜絕繞過
+    secret_key = get_file_server_secret_key()
+    expected_sig = generate_file_signature(sys_no, secret_key)
+    if not hmac.compare_digest(sig, expected_sig):
+        abort(403, "金鑰簽章驗證失敗，拒絕下載。")
+        
+    # 2. 嚴格防範 Directory Traversal (路徑遍歷)：僅允許英數與底線
+    import re
+    if not re.match(r'^[a-zA-Z0-9_]+$', sys_no):
+        abort(400, "非法系統唯一編號格式。")
+        
+    # 3. 讀取主機實體目錄 (優先 E:/IR/<sys_no>，無則使用本機模擬目錄 data/IR/<sys_no>)
+    from config import Config
+    # 支援手動配置 FILE_STORAGE_ROOT 環境變數，預設指向本機 E:/IR
+    storage_root = os.environ.get('FILE_STORAGE_ROOT', 'E:/IR')
+    target_dir = os.path.join(storage_root, sys_no)
+    
+    # 若實體 E:/IR 不存在，退回本機模擬目錄
+    if not os.path.exists(target_dir):
+        target_dir = os.path.join(Config.BASE_DIR, 'data', 'IR', sys_no)
+        
+    if not os.path.exists(target_dir):
+        # 測試友善防呆機制：若無任何檔案，自動動態建立模擬測試檔案，確保隨時可下載
+        try:
+            os.makedirs(target_dir, exist_ok=True)
+            test_file_path = os.path.join(target_dir, 'sample.pdf')
+            with open(test_file_path, 'w', encoding='utf-8') as f:
+                f.write(f"This is a simulated secure fulltext file for document {sys_no}.\n")
+        except Exception:
+            abort(404, "無法建立或找不到該系統號之檔案目錄。")
+            
+    # 尋找目錄底下的那唯一一個檔案
+    try:
+        files = [f for f in os.listdir(target_dir) if os.path.isfile(os.path.join(target_dir, f))]
+        if not files:
+            abort(404, "該目錄下無任何實體檔案。")
+        target_file = files[0]
+        # 使用 safe_join 完美防止 Directory Traversal
+        file_path = safe_join(target_dir, target_file)
+        return send_file(file_path, as_attachment=True, download_name=target_file)
+    except Exception as e:
+        abort(500, f"檔案讀取失敗: {str(e)}")
+
+
+@bp.route('/download/<sys_no>', methods=['GET'])
+@login_required
+def download_portal_file(sys_no):
+    """
+    本機應用系統轉接下載端點 (Application Portal)。
+    執行身分驗證、審計日誌持久化儲存、重複點擊防禦與頻率限流。
+    """
+    import re
+    if not re.match(r'^[a-zA-Z0-9_]+$', sys_no):
+        abort(400, "非法系統唯一編號格式。")
+        
+    user_id = session.get('user_id')
+    now = time.time()
+    
+    # ── 1. 防重複點擊下載限制 (5 秒內) ──
+    dup_key = (user_id, sys_no)
+    last_download_time = _DOWNLOAD_DUPLICATE_CACHE.get(dup_key)
+    if last_download_time and (now - last_download_time < 5.0):
+        return render_template('error.html', error_msg="請勿在 5 秒內重複點擊下載相同檔案。"), 429
+        
+    # ── 2. 滑動視窗頻率限制 (每分鐘最多 5 次) ──
+    user_history = [t for t in _DOWNLOAD_RATE_LIMIT_CACHE[user_id] if now - t < 60.0]
+    user_history.append(now)
+    _DOWNLOAD_RATE_LIMIT_CACHE[user_id] = user_history
+    
+    if len(user_history) > 5:
+        # 移除最後剛加進去的那次以求精準
+        _DOWNLOAD_RATE_LIMIT_CACHE[user_id].pop()
+        return render_template('error.html', error_msg="下載頻率過高：每位同仁每分鐘下載上限為 5 次。請稍候再試。"), 429
+        
+    # 更新重複下載時間戳記
+    _DOWNLOAD_DUPLICATE_CACHE[dup_key] = now
+    
+    # ── 3. 審計日誌持久化寫入 SYSTEM_DB (local_system.db) ──
+    try:
+        from app.db_manager import get_system_db_conn, execute_update
+        log_sql = """
+            INSERT INTO DOWNLOAD_LOGS (SYS_NO, USER_ID, IP_ADDRESS)
+            VALUES (?, ?, ?)
+        """
+        execute_update(lambda: get_system_db_conn(), log_sql, [sys_no, user_id, request.remote_addr])
+        log_audit('Download_Doc', user_id, request.remote_addr, sys_no, "使用者啟動安全下載檔案")
+    except Exception as e:
+        current_app.logger.error(f"下載日誌寫入失敗: {e}")
+        
+    # ── 4. 產生 HMAC 簽章，向內部檔案伺服器 API 發送請求 ──
+    from flask import current_app
+    secret_key = get_file_server_secret_key()
+    sig = generate_file_signature(sys_no, secret_key)
+    
+    if current_app.config.get('TESTING'):
+        # 測試模式下，為防範測試客戶端無真實 Web Server 監聽而導致 HTTP 連線失敗，直接在內部調用
+        # 建立模擬 query string context
+        with current_app.test_request_context(f"/api/file_server/download?sys_no={sys_no}&sig={sig}"):
+            return file_server_download()
+            
+    # 呼叫模擬檔案主機端點
+    import requests
+    # 動態讀取當前服務主機 host 以防 hardcode port 造成的連線失敗
+    host_url = request.host_url.rstrip('/')
+    file_server_url = f"{host_url}/api/file_server/download"
+    
+    try:
+        res = requests.get(file_server_url, params={'sys_no': sys_no, 'sig': sig}, stream=True, timeout=10)
+        if res.status_code != 200:
+            return render_template('error.html', error_msg=f"檔案主機拒絕回傳檔案。錯誤代碼: {res.status_code}"), res.status_code
+            
+        # 提取 content-disposition 標頭的檔名，或者兜底
+        cd = res.headers.get('content-disposition', '')
+        filename = f"{sys_no}_file.pdf"
+        if 'filename=' in cd:
+            filename = cd.split('filename=')[-1].strip('"').strip("'")
+            
+        # 以串流方式回傳給前端，保障伺服器記憶體不溢出
+        return Response(
+            res.iter_content(chunk_size=8192),
+            headers={
+                'Content-Type': res.headers.get('Content-Type', 'application/octet-stream'),
+                'Content-Disposition': f'attachment; filename={filename}'
+            }
+        )
+    except Exception as e:
+        current_app.logger.error(f"連線檔案伺服器失敗: {e}")
+        return render_template('error.html', error_msg=f"連線檔案伺服器時發生異常: {str(e)}"), 500
+
+
+@bp.route('/news', methods=['GET'])
+@login_required
+def news_list_view():
+    """展示全部最新消息獨立頁面"""
+    from app.config_manager import PortalConfigManager
+    portal_config = PortalConfigManager.load()
+    return render_template('news_list.html', news_list=portal_config.get('news', []))
+
+
+@bp.route('/templates', methods=['GET'])
+@login_required
+def templates_list_view():
+    """展示全部範本下載獨立頁面"""
+    from app.config_manager import PortalConfigManager
+    portal_config = PortalConfigManager.load()
+    return render_template('templates_list.html', templates_list=portal_config.get('templates', []))

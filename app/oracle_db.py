@@ -74,7 +74,7 @@ TABLE_SEARCH_FIELDS = {
         'public_field':     'OVC_PUBLIC_TYPE_CDE',
     },
     '逸光報': {
-        'main_table': 'VI_IRLIB_PAPER_MAIN',
+        'main_table': 'VI_IRLIB_PAPER',
         'sub_queries': [],
         'select_cols': {
             'SYS_NO':       'OVC_PAPER_ID',

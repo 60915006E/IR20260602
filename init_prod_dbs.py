@@ -212,17 +212,17 @@ def init_mock_data_db():
         cursor.executemany("INSERT INTO VI_IRLIB_HISTORY_MAIN (OVC_HS_NO, OVN_HS_NAME, OVC_HS_SUMMARY, ODT_HS_EVENT_DATE, OVC_HS_PULISH_YEAE, OVN_HA_UNIT_NAME, OVC_HS_CAT_CDE, OVC_HS_CAT_NAME, OVC_HA_NO, OVN_HA_TYPE, ONB_HA_UNIT_NUM, OVC_HA_LIB_MANAGE, OVN_HA_GET_INFO, OVC_GET_YEAR, OVN_HA_BELONG, OVC_HA_SIZE, OVC_HA_ROUND, OVC_HA_SPECIAL_SIZE, OVC_PUBLIC_TYPE_CDE, OVC_STATUS_CDE) VALUES (" + ",".join(["?"]*20) + ")", history_data)
 
         # == 逸光報 ==
-        cursor.execute("DROP TABLE IF EXISTS VI_IRLIB_PAPER_MAIN")
-        cursor.execute('''CREATE TABLE VI_IRLIB_PAPER_MAIN (
+        cursor.execute("DROP TABLE IF EXISTS VI_IRLIB_PAPER")
+        cursor.execute('''CREATE TABLE VI_IRLIB_PAPER (
             OVC_PAPER_ID TEXT PRIMARY KEY, OVN_PAPER_NAME TEXT, OVN_PAPER_AUTHOR TEXT, 
             OVC_PUBLIC_TYPE_CDE TEXT, OVC_STATUS_CDE TEXT,
-            ODT_UPDATE_DATE TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ODT_POS_DATE TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''')
         paper_data = []
         for i in range(51, 76):
             pid = f"N{i:03d}"
             paper_data.append((pid, f"逸光報第 {i} 期", "逸光編輯群", "Y", "D1"))
-        cursor.executemany("INSERT INTO VI_IRLIB_PAPER_MAIN (OVC_PAPER_ID, OVN_PAPER_NAME, OVN_PAPER_AUTHOR, OVC_PUBLIC_TYPE_CDE, OVC_STATUS_CDE) VALUES (?, ?, ?, ?, ?)", paper_data)
+        cursor.executemany("INSERT INTO VI_IRLIB_PAPER (OVC_PAPER_ID, OVN_PAPER_NAME, OVN_PAPER_AUTHOR, OVC_PUBLIC_TYPE_CDE, OVC_STATUS_CDE) VALUES (?, ?, ?, ?, ?)", paper_data)
 
         # == 史政照片 ==
         cursor.execute("DROP TABLE IF EXISTS VI_IRLIB_PHOTO_MAIN")

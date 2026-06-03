@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid" style="padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+        <div>
+            <h2 class="fw-bold" style="color: #0f172a; margin: 0; font-family: 'Outfit', sans-serif;">
+                <i class="bi bi-file-earmark-bar-graph"></i> 全文下載統計與稽核日誌
+            </h2>
+            <p class="text-muted" style="margin: 5px 0 0; font-size: 0.95rem;">
+                長期儲存並分析同仁之全文檔案下載行為，防堵大量下載風險。
+            </p>
+        </div>
+        <a href="{{ url_for('search.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-house"></i> 返回首頁
+        </a>
+    </div>
+
+    <!-- 統計數據看板 (Top 10 Rankings) -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        
+        <!-- 使用者下載排行榜 -->
+        <div class="card" style="background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 24px; border-top: 4px solid #6366f1;">
+            <h4 class="fw-bold" style="color: #312e81; margin-bottom: 15px; font-size: 1.15rem;">
+                <i class="bi bi-person-badge"></i> 使用者下載量排行榜 (Top 10)
+            </h4>
+            <div class="table-responsive">
+                <table class="table" style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #e2e8f0; background: #fafafa;">
+                            <th style="padding: 10px; text-align: left; width: 15%;">排名</th>
+                            <th style="padding: 10px; text-align: left; width: 55%;">使用者帳號</th>
+                            <th style="padding: 10px; text-align: right; width: 30%;">累積下載次數</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in user_stats %}
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 10px; font-weight: bold;">
+                                <span class="badge {% if loop.index == 1 %}bg-danger{% elif loop.index == 2 %}bg-warning{% elif loop.index == 3 %}bg-info{% else %}bg-secondary{% endif %}" style="font-size:0.85rem;">
+                                    {{ loop.index }}
+                                </span>
+                            </td>
+                            <td style="padding: 10px; color: #1e293b; font-weight: 600;">{{ row.USER_ID }}</td>
+                            <td style="padding: 10px; text-align: right; font-weight: bold; color: #4f46e5;">{{ row.DOWNLOAD_COUNT }} 次</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted" style="padding: 20px;">尚無使用者下載統計。</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 報告下載排行榜 -->
+        <div class="card" style="background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 24px; border-top: 4px solid #10b981;">
+            <h4 class="fw-bold" style="color: #064e3b; margin-bottom: 15px; font-size: 1.15rem;">
+                <i class="bi bi-file-earmark-text"></i> 熱門文獻下載排行榜 (Top 10)
+            </h4>
+            <div class="table-responsive">
+                <table class="table" style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #e2e8f0; background: #fafafa;">
+                            <th style="padding: 10px; text-align: left; width: 12%;">排名</th>
+                            <th style="padding: 10px; text-align: left; width: 23%;">系統編號</th>
+                            <th style="padding: 10px; text-align: left; width: 45%;">報告名稱 / 標題</th>
+                            <th style="padding: 10px; text-align: right; width: 20%;">下載次數</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in doc_stats %}
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 10px; font-weight: bold;">
+                                <span class="badge {% if loop.index == 1 %}bg-danger{% elif loop.index == 2 %}bg-warning{% elif loop.index == 3 %}bg-info{% else %}bg-secondary{% endif %}" style="font-size:0.85rem;">
+                                    {{ loop.index }}
+                                </span>
+                            </td>
+                            <td style="padding: 10px;">
+                                <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #0f766e; font-size: 0.85rem;">{{ row.SYS_NO }}</code>
+                            </td>
+                            <td style="padding: 10px;">
+                                <a href="{{ url_for('search.get_detail', token=row.SYS_NO | sign_doc) }}" 
+                                   target="_blank" style="color: #0d9488; text-decoration: none; font-weight: 500;"
+                                   onmouseover="this.style.textDecoration='underline'"
+                                   onmouseout="this.style.textDecoration='none'">
+                                    {{ row.TITLE | truncate(35) }}
+                                </a>
+                                <span class="text-muted" style="font-size:0.75rem; display:block; margin-top:2px;">分類: {{ row.DATA_TYPE }}</span>
+                            </td>
+                            <td style="padding: 10px; text-align: right; font-weight: bold; color: #059669;">{{ row.DOWNLOAD_COUNT }} 次</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted" style="padding: 20px;">尚無報告下載統計。</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 詳細審計日誌列表 -->
+    <div class="card" style="background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 24px; border-top: 4px solid #f59e0b;">
+        <h4 class="fw-bold" style="color: #78350f; margin-bottom: 15px; font-size: 1.15rem;">
+            <i class="bi bi-clock-history"></i> 詳細下載紀錄 (最近 200 筆)
+        </h4>
+        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+            <table class="table table-hover" style="width:100%; border-collapse:collapse;">
+                <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 10;">
+                    <tr style="border-bottom: 2px solid #cbd5e1;">
+                        <th style="padding: 12px; text-align: left; width: 8%;">ID</th>
+                        <th style="padding: 12px; text-align: left; width: 22%;">下載時間</th>
+                        <th style="padding: 12px; text-align: left; width: 15%;">下載帳號</th>
+                        <th style="padding: 12px; text-align: left; width: 15%;">來源 IP 地址</th>
+                        <th style="padding: 12px; text-align: left; width: 15%;">系統編號</th>
+                        <th style="padding: 12px; text-align: left; width: 25%;">下載文獻標題</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rl in logs %}
+                    <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;">
+                        <td style="padding: 12px; color: #64748b; font-size: 0.85rem;">{{ rl.ID }}</td>
+                        <td style="padding: 12px; color: #334155; font-size: 0.9rem;">{{ rl.DOWNLOAD_TIME }}</td>
+                        <td style="padding: 12px; color: #1e293b; font-weight: 600;">{{ rl.USER_ID }}</td>
+                        <td style="padding: 12px; color: #475569; font-family: monospace;">{{ rl.IP_ADDRESS }}</td>
+                        <td style="padding: 12px;">
+                            <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #b45309; font-size: 0.85rem;">{{ rl.SYS_NO }}</code>
+                        </td>
+                        <td style="padding: 12px;">
+                            <a href="{{ url_for('search.get_detail', token=rl.SYS_NO | sign_doc) }}" 
+                               target="_blank" style="color: #d97706; text-decoration: none; font-weight: 500;"
+                               onmouseover="this.style.textDecoration='underline'"
+                               onmouseout="this.style.textDecoration='none'">
+                                {{ rl.TITLE | truncate(35) }}
+                            </a>
+                            <span class="text-muted" style="font-size:0.75rem; display:block; margin-top:2px;">分類: {{ rl.DATA_TYPE }}</span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted" style="padding: 30px;">目前尚無任何全文下載稽核日誌。</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -57,6 +57,8 @@ def field_settings():
             for field in fields_config:
                 field['SHOW_IN_LIST'] = 'N'
                 field['SHOW_IN_DETAIL'] = 'N'
+                field['ALLOW_ADVANCED'] = 'N'
+                field['ALLOW_THEME'] = 'N'
                 
             # 根據提交資料更新中文自訂標籤與排序
             for key, value in request.form.items():
@@ -74,7 +76,7 @@ def field_settings():
                             except ValueError:
                                 field['SORT_ORDER'] = 999
 
-            # 根據提交資料更新清單檢索與詳細頁面露出
+            # 根據提交資料更新清單檢索、詳細頁面露出、進階搜尋條件與主題館搜尋條件
             for key, value in request.form.items():
                 if value == 'on' and key.startswith('list_'):
                     config_id = key.replace('list_', '')
@@ -86,6 +88,16 @@ def field_settings():
                     for field in fields_config:
                         if field['CONFIG_ID'] == config_id:
                             field['SHOW_IN_DETAIL'] = 'Y'
+                elif value == 'on' and key.startswith('adv_'):
+                    config_id = key.replace('adv_', '')
+                    for field in fields_config:
+                        if field['CONFIG_ID'] == config_id:
+                            field['ALLOW_ADVANCED'] = 'Y'
+                elif value == 'on' and key.startswith('theme_'):
+                    config_id = key.replace('theme_', '')
+                    for field in fields_config:
+                        if field['CONFIG_ID'] == config_id:
+                            field['ALLOW_THEME'] = 'Y'
                             
             # 寫回前依排序號進行重新排序
             fields_config.sort(key=lambda x: int(x.get('SORT_ORDER', 999)))
@@ -335,6 +347,8 @@ def system_settings():
         config['sso_user_info_url'] = request.form.get('sso_user_info_url', '').strip()
         config['search_mode'] = request.form.get('search_mode', 'cache')
         config['search_blacklist'] = request.form.get('search_blacklist', '').strip()
+        config['show_wordcloud'] = request.form.get('show_wordcloud') == 'on'
+        config['maintenance_mode'] = request.form.get('maintenance_mode') == 'on'
         
         # 讀取二階段操作安全密碼
         fields_sec_key = request.form.get('fields_sec_key', '').strip()
@@ -395,10 +409,14 @@ def sync_fields_config_with_oracle_db():
     # 遍歷資料庫中有的欄位
     for (dt, fn), db_row in db_fields.items():
         if (dt, fn) in json_fields:
-            # 兩邊都有：保留原有的 SHOW_IN_LIST 與 SHOW_IN_DETAIL 配置，但更新標籤與排序
+            # 兩邊都有：保留原有的 SHOW_IN_LIST 與 SHOW_IN_DETAIL 配置，但更新標籤與排序，並自癒補充進階搜尋與主題館控制開關
             json_item = json_fields[(dt, fn)]
             json_item['FIELD_LABEL'] = db_row['FIELD_LABEL']
             json_item['SORT_ORDER'] = db_row['SORT_ORDER'] or 99
+            if 'ALLOW_ADVANCED' not in json_item:
+                json_item['ALLOW_ADVANCED'] = 'Y'
+            if 'ALLOW_THEME' not in json_item:
+                json_item['ALLOW_THEME'] = 'Y'
             new_fields_config.append(json_item)
         else:
             # 資料庫有，JSON 沒有：新增至 JSON，預設值與資料庫對齊
@@ -409,6 +427,8 @@ def sync_fields_config_with_oracle_db():
                 "FIELD_LABEL": db_row['FIELD_LABEL'],
                 "SHOW_IN_LIST": "Y" if db_row['ALLOW_BROWSE'] == 1 else "N",
                 "SHOW_IN_DETAIL": "Y" if db_row['ALLOW_SEARCH'] == 1 else "N",
+                "ALLOW_ADVANCED": "Y",
+                "ALLOW_THEME": "Y",
                 "SORT_ORDER": db_row['SORT_ORDER'] or 99
             }
             new_fields_config.append(new_item)
@@ -580,8 +600,126 @@ def delete_oracle_field(map_id):
         # 動態雙向同步自癒
         sync_fields_config_with_oracle_db()
         
-        log_audit('Admin_Config', session['user_id'], request.remote_addr, 'oracle_fields.db', f"刪除了動態欄位項目，ID: {map_id}")
+        log_audit('Admin_Config', session['user_id'], request.remote_addr, 'oracle_fields.db', f"刪成了動態欄位項目，ID: {map_id}")
         return redirect(url_for('admin.oracle_fields_settings', msg="succ"))
     except Exception as e:
         current_app.logger.error(f"刪除欄位失敗: {e}")
         return "刪除欄位失敗", 500
+
+@bp.route('/sync_cache', methods=['POST'])
+@admin_required
+def sync_cache():
+    """管理員高安全性手動快取重整與重新整理路由"""
+    from flask import flash
+    sec_pwd = get_fields_sec_password()
+    sec_key = request.form.get('sec_key', '').strip()
+    
+    if sec_key != sec_pwd:
+        return "二階段密碼驗證失敗！拒絕執行快取重整。", 403
+        
+    try:
+        from app.db_manager import get_cache_db_conn
+        # 1. 重設同步元數據，清空快取表，確保無殘留
+        conn = get_cache_db_conn()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE SYNC_METADATA SET VALUE = '1970-01-01 00:00:00' WHERE KEY = 'LAST_SYNC_TIME'")
+        cursor.execute("DELETE FROM GLOBAL_SEARCH_INDEX")
+        conn.commit()
+        conn.close()
+        
+        # 2. 執行強制快取重新載入
+        from sync_index import sync_data
+        sync_data(force=True)
+        
+        flash("快取資料庫重整成功！所有資料已從 Oracle 19c 重新全量同步。", "success")
+        log_audit('Admin_Config', session['user_id'], request.remote_addr, 'local_cache_data.db', "執行了手動快取重整與重新整理")
+    except Exception as e:
+        current_app.logger.error(f"手動重整快取失敗: {e}")
+        flash(f"快取重整失敗，原因: {e}", "error")
+        
+    return redirect(request.referrer or url_for('admin.oracle_fields_settings'))
+
+
+@bp.route('/download_logs', methods=['GET'])
+@admin_required
+def download_logs():
+    """
+    管理者後台：展示長期儲存之全文下載審計日誌與統計分析。
+    統計前 10 名最常下載的讀者帳號與被下載次數前 10 名的文獻。
+    """
+    from app.db_manager import get_system_db_conn, execute_query
+    
+    # 1. 撈取使用者下載量前 10 名 (Top 10 Users)
+    user_stats_sql = """
+        SELECT USER_ID, COUNT(*) AS DOWNLOAD_COUNT 
+        FROM DOWNLOAD_LOGS 
+        GROUP BY USER_ID 
+        ORDER BY DOWNLOAD_COUNT DESC 
+        LIMIT 10
+    """
+    user_stats = execute_query(lambda: get_system_db_conn(), user_stats_sql)
+    
+    # 2. 撈取報告被下載次數前 10 名 (Top 10 Documents)
+    doc_stats_sql = """
+        SELECT SYS_NO, COUNT(*) AS DOWNLOAD_COUNT 
+        FROM DOWNLOAD_LOGS 
+        GROUP BY SYS_NO 
+        ORDER BY DOWNLOAD_COUNT DESC 
+        LIMIT 10
+    """
+    doc_stats = execute_query(lambda: get_system_db_conn(), doc_stats_sql)
+    
+    # 3. 撈取最近的 200 筆詳細下載日誌列表以提供完整稽核
+    logs_sql = """
+        SELECT ID, DOWNLOAD_TIME, SYS_NO, USER_ID, IP_ADDRESS 
+        FROM DOWNLOAD_LOGS 
+        ORDER BY DOWNLOAD_TIME DESC 
+        LIMIT 200
+    """
+    raw_logs = execute_query(lambda: get_system_db_conn(), logs_sql)
+    
+    # 對文獻做標題查找，便於管理員閱讀 (提升 UX / 精緻度)
+    enriched_logs = []
+    if raw_logs:
+        from app.db_manager import get_cache_db_conn
+        sys_nos = list(set([r['SYS_NO'] for r in raw_logs]))
+        title_map = {}
+        if sys_nos:
+            placeholders = ",".join(["?"] * len(sys_nos))
+            title_sql = f"SELECT SYS_NO, TITLE, DATA_TYPE FROM GLOBAL_SEARCH_INDEX WHERE SYS_NO IN ({placeholders})"
+            title_records = execute_query(lambda: get_cache_db_conn(), title_sql, sys_nos)
+            for tr in title_records:
+                title_map[tr['SYS_NO']] = (tr['TITLE'], tr['DATA_TYPE'])
+                
+        for rl in raw_logs:
+            info = title_map.get(rl['SYS_NO'], ("未知/已移除書目", "未知"))
+            rl_dict = dict(rl)
+            rl_dict['TITLE'] = info[0]
+            rl_dict['DATA_TYPE'] = info[1]
+            enriched_logs.append(rl_dict)
+            
+    # 對 doc_stats 同樣補上標題
+    enriched_doc_stats = []
+    if doc_stats:
+        from app.db_manager import get_cache_db_conn
+        doc_sys_nos = [d['SYS_NO'] for d in doc_stats]
+        doc_title_map = {}
+        placeholders = ",".join(["?"] * len(doc_sys_nos))
+        doc_title_sql = f"SELECT SYS_NO, TITLE, DATA_TYPE FROM GLOBAL_SEARCH_INDEX WHERE SYS_NO IN ({placeholders})"
+        doc_title_records = execute_query(lambda: get_cache_db_conn(), doc_title_sql, doc_sys_nos)
+        for tr in doc_title_records:
+            doc_title_map[tr['SYS_NO']] = (tr['TITLE'], tr['DATA_TYPE'])
+            
+        for ds in doc_stats:
+            ds_dict = dict(ds)
+            info = doc_title_map.get(ds['SYS_NO'], ("未知/已移除書目", "未知"))
+            ds_dict['TITLE'] = info[0]
+            ds_dict['DATA_TYPE'] = info[1]
+            enriched_doc_stats.append(ds_dict)
+
+    return render_template(
+        'admin/download_logs.html',
+        user_stats=user_stats,
+        doc_stats=enriched_doc_stats,
+        logs=enriched_logs
+    )

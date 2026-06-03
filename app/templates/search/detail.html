@@ -183,13 +183,13 @@ document.getElementById('downloadBtn').addEventListener('click', function() {
     const docId = _BM_SYS_NO;
     const msgDiv = document.getElementById('downloadMessage');
     msgDiv.style.color = '#0ea5e9';
-    msgDiv.innerText = '[模擬] 正向零信任閘道請求連線...';
+    msgDiv.innerText = '正在向安全儲存主機發起下載要求...';
 
     setTimeout(() => {
-        const endpoint = "{{ url_for('search.file_download', data_type='__TYPE__', sys_no='__PLACEHOLDER__') }}".replace('__TYPE__', encodeURIComponent(_BM_DTYPE)).replace('__PLACEHOLDER__', encodeURIComponent(docId));
+        const endpoint = "{{ url_for('search.download_portal_file', sys_no='__PLACEHOLDER__') }}".replace('__PLACEHOLDER__', encodeURIComponent(docId));
         msgDiv.style.color = 'green';
-        msgDiv.innerHTML = `<i class="bi bi-check-circle"></i> 授權成功！開始下載檔案...`;
-        window.location.href = endpoint;
+        msgDiv.innerHTML = `<i class="bi bi-check-circle-fill"></i> 要求已送出！另開視窗下載中...`;
+        window.open(endpoint, '_blank');
     }, 800);
 });
 </script>

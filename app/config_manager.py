@@ -111,7 +111,7 @@ COLUMN_MAP = {
     'OVC_TO_APPLY_DEPT1_NAME':('申請單位1',         '史政照片'),
     'OVC_TO_APPLY_DEPT2_NAME':('申請單位2',         '史政照片'),
     'ODT_TO_DATE':            ('照片日期',           '史政照片'),
-    # ── 逸光報 VI_IRLIB_PAPER_MAIN ─────────────────────────────────
+    # ── 逸光報 VI_IRLIB_PAPER ─────────────────────────────────
     'OVN_FILE_NAME':          ('逸光報標題',         '逸光報'),
     'OVN_FLD_DESC':           ('內容描述',           '逸光報'),
     'ODT_PRI_DATE':           ('發行日期',           '逸光報'),

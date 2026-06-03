@@ -9,16 +9,20 @@
     <div style="position: relative; z-index: 1;">
         <div style="text-align: center; margin-bottom: 2rem;">
             <h1 style="font-size: 2.8rem; color: #1e293b; margin-bottom: 1rem; text-shadow: 0 2px 4px rgba(255,255,255,0.8);">機構典藏系統</h1>
-            <p style="color: #475569; font-weight: 500; font-size: 1.1rem; text-shadow: 0 1px 2px rgba(255,255,255,0.8);">技術報告 · 史政 · 史政照片 · 逸光報</p>
         </div>
 
         <div class="search-container" style="margin-bottom: 2rem;">
-            <form action="{{ url_for('search.do_search') }}" method="GET" class="search-form" style="max-width: 800px; margin: 0 auto; background: rgba(255, 255, 255, 0.9); padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
-                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; align-items: center;">
+            <form action="{{ url_for('search.do_search') }}" method="GET" class="search-form" style="max-width: 950px; margin: 0 auto; background: rgba(255, 255, 255, 0.9); padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 10px; align-items: center;">
                     <input type="text" name="q" id="search-input-index" class="search-input"
                            placeholder="請輸入關鍵字、人員名稱或單位..." autocomplete="off"
                            list="suggestion-list-index" style="flex: 1; min-width: 280px;">
                     <button type="submit" class="btn" style="padding: 0.8rem 2.5rem; font-weight: bold;">搜尋</button>
+
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 1rem; color: #334155; white-space: nowrap;"><input type="checkbox" name="data_type" value="技術報告" checked style="width:18px;height:18px;"> 技術報告</label>
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 1rem; color: #334155; white-space: nowrap;"><input type="checkbox" name="data_type" value="史政" checked style="width:18px;height:18px;"> 史政</label>
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 1rem; color: #334155; white-space: nowrap;"><input type="checkbox" name="data_type" value="史政照片" checked style="width:18px;height:18px;"> 史政照片</label>
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 1rem; color: #334155; white-space: nowrap;"><input type="checkbox" name="data_type" value="逸光報" checked style="width:18px;height:18px;"> 逸光報</label>
 
                     {# Task 1: 常用搜尋下拉 #}
                     {% if session.get('user_id') %}
@@ -32,13 +36,6 @@
                 </div>
                 
                 <datalist id="suggestion-list-index"></datalist>
-                
-                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
-                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 1rem; color: #334155;"><input type="checkbox" name="data_type" value="技術報告" checked style="width:18px;height:18px;"> 技術報告</label>
-                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 1rem; color: #334155;"><input type="checkbox" name="data_type" value="史政" checked style="width:18px;height:18px;"> 史政</label>
-                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 1rem; color: #334155;"><input type="checkbox" name="data_type" value="史政照片" checked style="width:18px;height:18px;"> 史政照片</label>
-                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 1rem; color: #334155;"><input type="checkbox" name="data_type" value="逸光報" checked style="width:18px;height:18px;"> 逸光報</label>
-                </div>
             </form>
         </div>
 
@@ -71,31 +68,45 @@
 <!-- 最新消息與動態範本區塊 -->
 <div class="row" style="margin-bottom: 3rem; display: flex; gap: 20px; flex-wrap: wrap;">
     <!-- 最新消息 -->
-    <div style="flex: 2; min-width: 300px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); padding: 1.5rem; border-top: 4px solid var(--primary-color);">
-        <h4 style="margin-bottom: 1rem; color: var(--primary-color);"><i class="bi bi-newspaper"></i> 最新消息</h4>
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            {% for news in portal_config.news %}
-            <div style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
-                <h5 style="margin-bottom: 5px; color: #1e293b;">{{ news.title }}</h5>
-                <p style="margin: 0; color: #475569; font-size: 0.9rem;">{{ news.content }}</p>
+    <div style="flex: 2; min-width: 300px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); padding: 1.5rem; border-top: 4px solid var(--primary-color); display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+            <h4 style="margin-bottom: 1rem; color: var(--primary-color);"><i class="bi bi-newspaper"></i> 最新消息</h4>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                {% for news in portal_config.news[:2] %}
+                <div style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
+                    <h5 style="margin-bottom: 5px; color: #1e293b; font-weight: bold;">{{ news.title }}</h5>
+                    <p style="margin: 0; color: #475569; font-size: 0.9rem;">{{ news.content }}</p>
+                </div>
+                {% else %}
+                <p style="color: #94a3b8; font-size: 0.9rem;">目前尚無最新消息</p>
+                {% endfor %}
             </div>
-            {% else %}
-            <p style="color: #94a3b8; font-size: 0.9rem;">目前尚無最新消息</p>
-            {% endfor %}
+        </div>
+        <div style="text-align: right; margin-top: 15px;">
+            <a href="{{ url_for('search.news_list_view') }}" style="color: var(--primary-color); text-decoration: none; font-weight: bold; font-size: 0.9rem; transition: color 0.15s;" onmouseover="this.style.color='#4f46e5';" onmouseout="this.style.color='var(--primary-color)';">
+                <i class="bi bi-arrow-right-circle"></i> 查看更多消息
+            </a>
         </div>
     </div>
 
     <!-- 範本下載 -->
-    <div style="flex: 1; min-width: 250px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); padding: 1.5rem; border-top: 4px solid #10b981;">
-        <h4 style="margin-bottom: 1rem; color: #10b981;"><i class="bi bi-file-earmark-arrow-down"></i> 範本下載</h4>
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            {% for tpl in portal_config.templates %}
-            <a href="{{ tpl.url }}" class="keyword-tag" style="display: block; text-align: left; padding: 12px; margin: 0; border: 1px solid #10b981; background: #ecfdf5; color: #065f46;">
-                <i class="bi bi-file-earmark-text"></i> {{ tpl.filename }}
+    <div style="flex: 1; min-width: 250px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); padding: 1.5rem; border-top: 4px solid #10b981; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+            <h4 style="margin-bottom: 1rem; color: #10b981;"><i class="bi bi-file-earmark-arrow-down"></i> 範本下載</h4>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                {% for tpl in portal_config.templates[:2] %}
+                <a href="{{ tpl.url }}" class="keyword-tag" style="display: block; text-align: left; padding: 12px; margin: 0; border: 1px solid #10b981; background: #ecfdf5; color: #065f46; border-radius: 6px; text-decoration: none; font-weight: 500;">
+                    <i class="bi bi-file-earmark-text"></i> {{ tpl.filename }}
+                </a>
+                {% else %}
+                <p style="color: #94a3b8; font-size: 0.9rem;">目前尚無下載範本</p>
+                {% endfor %}
+            </div>
+        </div>
+        <div style="text-align: right; margin-top: 15px;">
+            <a href="{{ url_for('search.templates_list_view') }}" style="color: #10b981; text-decoration: none; font-weight: bold; font-size: 0.9rem; transition: color 0.15s;" onmouseover="this.style.color='#047857';" onmouseout="this.style.color='#10b981';">
+                <i class="bi bi-arrow-right-circle"></i> 查看更多範本
             </a>
-            {% else %}
-            <p style="color: #94a3b8; font-size: 0.9rem;">目前尚無下載範本</p>
-            {% endfor %}
         </div>
     </div>
 </div>

@@ -61,13 +61,9 @@
         
         <div class="d-flex gap-2 mb-3">
             <select id="searchField" class="form-control" style="width: auto;">
-                <option value="標題">標題</option>
-                <option value="作者">作者</option>
-                <option value="內容">內容</option>
-                <option value="年度">年度</option>
-                <option value="單位">單位</option>
-                <option value="機密等級">機密等級</option>
-                <option value="報告系統唯一編號">報告系統唯一編號</option>
+                {% for f in dynamic_fields %}
+                <option value="{{ f.name }}">{{ f.label }}</option>
+                {% endfor %}
             </select>
             <input type="text" id="searchValue" class="form-control" placeholder="請輸入檢索詞...">
             <button class="btn btn-success" onclick="executeMiniSearch()">搜尋</button>

@@ -63,7 +63,7 @@ def build_search_text(row, data_type, fields_config):
             'SUMMARY': 'OVC_HS_SUMMARY',
             'YEAR': 'OVC_HS_PULISH_YEAE',
             'DEPT_NAME': 'OVN_HA_BELONG',
-            'SECRET_LV_CDE': 'SECRET_LV_CDE'
+            'SECRET_LV_CDE': 'NULL'
         }
     elif data_type == "史政照片":
         alias_map = {
@@ -73,7 +73,7 @@ def build_search_text(row, data_type, fields_config):
             'SUMMARY': 'OVN_TO_SUMMARY',
             'YEAR': 'ODT_TO_DATE',
             'DEPT_NAME': 'OVC_TO_APPLY_DEPT1_NAME',
-            'SECRET_LV_CDE': 'SECRET_LV_CDE'
+            'SECRET_LV_CDE': 'NULL'
         }
     elif data_type == "逸光報":
         alias_map = {
@@ -83,7 +83,7 @@ def build_search_text(row, data_type, fields_config):
             'SUMMARY': 'OVN_FLD_DESC',
             'YEAR': 'ODT_PRI_DATE',
             'DEPT_NAME': 'NULL',
-            'SECRET_LV_CDE': 'SECRET_LV_CDE'
+            'SECRET_LV_CDE': 'NULL'
         }
         
     alias_map_upper = {k.upper(): v.upper() for k, v in alias_map.items()}
@@ -120,9 +120,20 @@ def init_cache_database(cache_conn):
             DEPT_NAME TEXT,
             SECRET_LV_CDE TEXT,
             SEARCH_TEXT TEXT,
-            EXACT_DATA_JSON TEXT
+            EXACT_DATA_JSON TEXT,
+            UPDATED_AT TEXT
         )
         """)
+        
+        # 檢查並自癒升級新增 UPDATED_AT 欄位
+        try:
+            cursor.execute("SELECT UPDATED_AT FROM GLOBAL_SEARCH_INDEX LIMIT 1")
+        except sqlite3.OperationalError:
+            try:
+                cursor.execute("ALTER TABLE GLOBAL_SEARCH_INDEX ADD COLUMN UPDATED_AT TEXT")
+                logger.info("成功為 GLOBAL_SEARCH_INDEX 資料表增量升級 UPDATED_AT 欄位。")
+            except Exception as alter_err:
+                logger.error(f"升級 UPDATED_AT 欄位失敗: {alter_err}")
         
         # 2. 建立同步元數據表，紀錄上次成功同步時間
         cursor.execute("""
@@ -166,83 +177,125 @@ def update_last_sync_time(cache_conn, sync_time_str):
         cursor.close()
 
 def fetch_and_transform_incremental(conn, sql, last_sync_time, is_full_sync=False, fields_config=None):
-    """執行查詢並轉化為 bulk insert 需要的結構 (支援 SQLite 與 Oracle 的時間格式相容)"""
-    cursor = conn.cursor()
-    try:
-        # 使用綁定變數帶入上次同步時間戳記
-        if is_full_sync:
-            cursor.execute(sql)
-        else:
+    """執行查詢並轉化為 bulk insert 需要的結構 (支援 SQLite 與 Oracle 的時間格式相容，具備欄位缺失智慧自癒能力)"""
+    import re
+    max_attempts = 10
+    attempt = 0
+    
+    while attempt < max_attempts:
+        attempt += 1
+        cursor = conn.cursor()
+        try:
             # 跨資料庫參數綁定相容性：SQLite 位置佔位符應使用 ? 以排除 DeprecationWarning
-            if isinstance(conn, sqlite3.Connection):
-                sql_sqlite = sql.replace(":1", "?")
-                cursor.execute(sql_sqlite, [last_sync_time])
+            if is_full_sync:
+                cursor.execute(sql)
             else:
-                cursor.execute(sql, [last_sync_time])
-        columns = [col[0] for col in cursor.description]
-        
-        insert_data = []
-        for row in cursor.fetchall():
-            row_dict = dict(zip(columns, row))
+                if isinstance(conn, sqlite3.Connection):
+                    sql_sqlite = sql.replace(":1", "?")
+                    cursor.execute(sql_sqlite, [last_sync_time])
+                else:
+                    cursor.execute(sql, [last_sync_time])
+            columns = [col[0] for col in cursor.description]
             
-            # 取出核心共用欄位
-            unique_id = row_dict.get('UNIQUE_ID')
-            sort_order = row_dict.get('TYPE_SORT_ORDER')
-            data_type = row_dict.get('DATA_TYPE')
-            sys_no = row_dict.get('SYS_NO')
-            title = row_dict.get('TITLE')
-            summary = row_dict.get('SUMMARY')
-            author = row_dict.get('AUTHOR')
-            publish_date = row_dict.get('PUBLISH_DATE')
-            year = row_dict.get('YEAR')
-            dept_name = row_dict.get('DEPT_NAME')
-            secret_lv_cde = row_dict.get('SECRET_LV_CDE', '一般')
-            
-            # 安全防禦機制：僅把 ALLOW_BROWSE = 1 或核心安全屬性欄位寫入 EXACT_DATA_JSON (深度防禦原則)
-            if fields_config:
-                browseable_fields = [f['FIELD_NAME'] for f in fields_config if f['DATA_TYPE'] == data_type and f['ALLOW_BROWSE'] == 1]
-                core_fields = [
-                    'OVC_RP_NO', 'OVC_HS_NO', 'OVC_TO_NO', 'OVC_PAPER_ID', 
-                    'OVC_PUBLIC_TYPE_CDE', 'OVC_STATUS_CDE', 'UNIQUE_ID', 
-                    'SYS_NO', 'DATA_TYPE', 'TYPE_SORT_ORDER', 'TITLE', 
-                    'SUMMARY', 'AUTHOR', 'PUBLISH_DATE', 'YEAR', 'DEPT_NAME', 
-                    'SECRET_LV_CDE', 'OVC_SECRET_LV_CDE'
-                ]
-                cleaned_row_dict = {}
-                for k, val in row_dict.items():
-                    if k in core_fields or (browseable_fields and k in browseable_fields):
-                        cleaned_row_dict[k] = val
-            else:
-                cleaned_row_dict = row_dict
+            insert_data = []
+            for row in cursor.fetchall():
+                row_dict = dict(zip(columns, row))
+                
+                # 取出核心共用欄位
+                unique_id = row_dict.get('UNIQUE_ID')
+                sort_order = row_dict.get('TYPE_SORT_ORDER')
+                data_type = row_dict.get('DATA_TYPE')
+                sys_no = row_dict.get('SYS_NO')
+                title = row_dict.get('TITLE')
+                summary = row_dict.get('SUMMARY')
+                author = row_dict.get('AUTHOR')
+                publish_date = row_dict.get('PUBLISH_DATE')
+                year = row_dict.get('YEAR')
+                dept_name = row_dict.get('DEPT_NAME')
+                secret_lv_cde = row_dict.get('SECRET_LV_CDE')
+                
+                # 安全防禦機制：僅把 ALLOW_BROWSE = 1 或核心安全屬性欄位寫入 EXACT_DATA_JSON (深度防禦原則)
+                if fields_config:
+                    browseable_fields = [f['FIELD_NAME'] for f in fields_config if f['DATA_TYPE'] == data_type and f['ALLOW_BROWSE'] == 1]
+                    core_fields = [
+                        'OVC_RP_NO', 'OVC_HS_NO', 'OVC_TO_NO', 'OVC_PAPER_ID', 
+                        'OVC_PUBLIC_TYPE_CDE', 'OVC_STATUS_CDE', 'UNIQUE_ID', 
+                        'SYS_NO', 'DATA_TYPE', 'TYPE_SORT_ORDER', 'TITLE', 
+                        'SUMMARY', 'AUTHOR', 'PUBLISH_DATE', 'YEAR', 'DEPT_NAME', 
+                        'SECRET_LV_CDE', 'OVC_SECRET_LV_CDE'
+                    ]
+                    cleaned_row_dict = {}
+                    for k, val in row_dict.items():
+                        if k in core_fields or (browseable_fields and k in browseable_fields):
+                            cleaned_row_dict[k] = val
+                else:
+                    cleaned_row_dict = row_dict
 
-            # 使用 JSON 封裝過濾後的欄位
-            exact_data_json = json.dumps(cleaned_row_dict, cls=CustomJSONEncoder, ensure_ascii=False)
+                # 使用 JSON 封裝過濾後的欄位
+                exact_data_json = json.dumps(cleaned_row_dict, cls=CustomJSONEncoder, ensure_ascii=False)
+                
+                # 建立全文搜尋字串 (僅包含 ALLOW_SEARCH = 1 的欄位內容)
+                search_text = build_search_text(row_dict, data_type, fields_config or [])
+                
+                insert_data.append((
+                    unique_id, sort_order, data_type, sys_no, title, summary, 
+                    author, publish_date, year, dept_name, secret_lv_cde, 
+                    search_text, exact_data_json
+                ))
+            return insert_data
+        except Exception as e:
+            err_msg = str(e)
+            # 智慧探測缺失欄位
+            col_name = None
+            # Oracle: ORA-00904: "OVC_PUBLISH_UNIT": invalid identifier
+            ora_match = re.search(r'ORA-00904:\s*"([^"]+)"', err_msg, re.IGNORECASE)
+            if not ora_match:
+                ora_match = re.search(r'ORA-00904:\s*([a-zA-Z0-9_]+)', err_msg, re.IGNORECASE)
+            sqlite_match = re.search(r'no such column:\s*([a-zA-Z0-9_.]+)', err_msg, re.IGNORECASE)
             
-            # 建立全文搜尋字串 (僅包含 ALLOW_SEARCH = 1 的欄位內容)
-            search_text = build_search_text(row_dict, data_type, fields_config or [])
+            if ora_match:
+                col_name = ora_match.group(1)
+            elif sqlite_match:
+                col_name = sqlite_match.group(1)
+                if '.' in col_name:
+                    col_name = col_name.split('.')[-1]
+                    
+            if col_name:
+                col_name_upper = col_name.upper()
+                logger.warning(f"檢測到實體資料庫中缺少欄位 [{col_name_upper}]，啟動自動重寫 SQL 自癒機制。嘗試次數: {attempt}/{max_attempts}")
+                
+                # 嘗試進行 SQL 重寫
+                pattern = rf'\b{re.escape(col_name_upper)}\b\s+AS\s+\b{re.escape(col_name_upper)}\b'
+                new_sql, count = re.subn(pattern, f'NULL AS {col_name_upper}', sql, flags=re.IGNORECASE)
+                if count == 0:
+                    pattern_simple = rf'\b{re.escape(col_name_upper)}\b'
+                    new_sql, count = re.subn(pattern_simple, 'NULL', sql, flags=re.IGNORECASE)
+                    
+                if count > 0 and new_sql != sql:
+                    sql = new_sql
+                    cursor.close()
+                    continue  # 重試
             
-            insert_data.append((
-                unique_id, sort_order, data_type, sys_no, title, summary, 
-                author, publish_date, year, dept_name, secret_lv_cde, 
-                search_text, exact_data_json
-            ))
-        return insert_data
-    except Exception as e:
-        logger.error(f"提取增量資料發生錯誤: SQL=[{sql[:50]}...], Error=[{str(e)}]")
-        raise
-    finally:
-        cursor.close()
+            cursor.close()
+            logger.error(f"提取增量資料發生錯誤: SQL=[{sql[:120]}...], Error=[{str(e)}]")
+            raise e
+        finally:
+            try:
+                cursor.close()
+            except:
+                pass
+    raise Exception("超過 SQL 重寫自癒重試次數上限。")
 
-def sync_data():
+def sync_data(force=False):
     """增量同步核心邏輯"""
     logger.info("開始執行增量快取資料庫同步作業...")
     
     # 限制僅在 06:00 至 18:00 之間進行同步，其餘時間跳過不執行以減輕資源負擔
-    # 本地 SQLite 測試模式或傳入 --force 則不限制，保障隨時測試可用
+    # 本地 SQLite 測試模式、傳入 --force 或手動強制執行則不限制，保障隨時測試可用
     import sys
     now_hour = datetime.now().hour
     is_sqlite = getattr(Config, 'DATA_DB_MODE', 'ORACLE') == 'SQLITE'
-    is_forced = '--force' in sys.argv
+    is_forced = force or '--force' in sys.argv
     if not is_sqlite and not is_forced and (now_hour < 6 or now_hour >= 18):
         logger.info("非同步時間區間 (06:00 - 18:00)，跳過同步作業。")
         return
@@ -278,27 +331,17 @@ def sync_data():
         # 第一次全量同步時，不加入時間過濾條件以抓取全部歷史資料
         is_full_sync = (last_sync_time == '1970-01-01 00:00:00')
         
-        # 定義時間過濾的 SQL 片段 (防呆並支援雙資料庫語意，簡單比對，NULL 值由首次全量同步完整抓入)
-        if is_full_sync:
-            time_filter = ""
-        elif is_sqlite:
-            # 開發/測試 SQLite 模式
-            time_filter = "AND ODT_UPDATE_DATE > :1"
-        else:
-            # 正式 Oracle 19c 模式：轉換字串為 DATE 進行比對
-            time_filter = "AND ODT_UPDATE_DATE > TO_DATE(:1, 'YYYY-MM-DD HH24:MI:SS')"
- 
         prefix = "" if is_sqlite else getattr(Config, 'DATA_DB_SCHEMA', 'IRLIB.')
         
         # ── 動態 SQL 生成器：完全讀取並適應自訂變更之欄位名，防禦 ORA-00904 崩潰 ──
-        def build_dynamic_sync_sql(data_type, prefix_val, time_filter_val, config_list):
+        def build_dynamic_sync_sql(data_type, prefix_val, config_list):
             type_fields = [f['FIELD_NAME'] for f in config_list if f['DATA_TYPE'] == data_type] if config_list else []
             
             table_mappings = {
                 "技術報告": "VI_IRLIB_REPORT_MAIN",
                 "史政": "VI_IRLIB_HISTORY_MAIN",
                 "史政照片": "VI_IRLIB_PHOTO_MAIN",
-                "逸光報": "VI_IRLIB_PAPER_MAIN"
+                "逸光報": "VI_IRLIB_PAPER"
             }
             table_name = table_mappings.get(data_type, "VI_IRLIB_REPORT_MAIN")
             
@@ -309,6 +352,15 @@ def sync_data():
                 "史政照片": 4
             }
             type_sort_order = sort_orders.get(data_type, 1)
+            
+            # 動態組裝該類型的增量時間過濾條件 (逸光報改用 ODT_POS_DATE，其餘使用 ODT_UPDATE_DATE)
+            time_col = "ODT_POS_DATE" if data_type == "逸光報" else "ODT_UPDATE_DATE"
+            if is_full_sync:
+                time_filter_val = ""
+            elif is_sqlite:
+                time_filter_val = f"AND {time_col} > :1"
+            else:
+                time_filter_val = f"AND {time_col} > TO_DATE(:1, 'YYYY-MM-DD HH24:MI:SS')"
 
             # Fail-safe 回退防護機制：若配置為空，自動載入出廠預設 SQL 以保障高可用性
             if not type_fields:
@@ -453,10 +505,10 @@ def sync_data():
             return sql_query
 
         # 動態拼接生成 SQL
-        sql_report = build_dynamic_sync_sql("技術報告", prefix, time_filter, fields_config)
-        sql_history = build_dynamic_sync_sql("史政", prefix, time_filter, fields_config)
-        sql_paper = build_dynamic_sync_sql("逸光報", prefix, time_filter, fields_config)
-        sql_photo = build_dynamic_sync_sql("史政照片", prefix, time_filter, fields_config)
+        sql_report = build_dynamic_sync_sql("技術報告", prefix, fields_config)
+        sql_history = build_dynamic_sync_sql("史政", prefix, fields_config)
+        sql_paper = build_dynamic_sync_sql("逸光報", prefix, fields_config)
+        sql_photo = build_dynamic_sync_sql("史政照片", prefix, fields_config)
         
         # ── 進行增量資料提取 (高容錯防禦性設計：若某表尚未建立或欄位配置不符，自動跳過並引導說明而不中斷整體同步) ──
         def safe_fetch_incremental(name, sql):
@@ -466,10 +518,10 @@ def sync_data():
             except Exception as e:
                 err_msg = str(e)
                 if "ORA-00942" in err_msg or "no such table" in err_msg:
-                    logger.warning(f"⚠️ 外部資料庫目前不存在 {name} 實體表/視圖，系統將自動跳過此分類同步。")
+                    logger.warning(f"外部資料庫目前不存在 {name} 實體表/視圖，系統將自動跳過此分類同步。")
                     return []
                 elif "ORA-00904" in err_msg or "no such column" in err_msg:
-                    logger.warning(f"⚠️ 外部資料庫中的 [{name}] 欄位名稱與實體表結構不符！請至管理後台「Oracle 核心欄位配置」進行動態名稱更正。原因: {err_msg}")
+                    logger.warning(f"外部資料庫中的 [{name}] 欄位名稱與實體表結構不符！請至管理後台「Oracle 核心欄位配置」進行動態名稱更正。原因: {err_msg}")
                     return []
                 else:
                     logger.error(f"提取 {name} 變更時發生非預期錯誤: {e}")
@@ -494,12 +546,14 @@ def sync_data():
             insert_sql = """
             INSERT OR REPLACE INTO GLOBAL_SEARCH_INDEX (
                 UNIQUE_ID, TYPE_SORT_ORDER, DATA_TYPE, SYS_NO, TITLE, SUMMARY, 
-                AUTHOR, PUBLISH_DATE, YEAR, DEPT_NAME, SECRET_LV_CDE, SEARCH_TEXT, EXACT_DATA_JSON
+                AUTHOR, PUBLISH_DATE, YEAR, DEPT_NAME, SECRET_LV_CDE, SEARCH_TEXT, EXACT_DATA_JSON, UPDATED_AT
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )
             """
-            cache_cursor.executemany(insert_sql, all_data)
+            # 為每筆資料加上同步更新時間 UPDATED_AT
+            all_data_with_time = [row + (current_sync_time,) for row in all_data]
+            cache_cursor.executemany(insert_sql, all_data_with_time)
             
             # 更新最後成功同步時間戳記
             cache_cursor.execute("INSERT OR REPLACE INTO SYNC_METADATA (KEY, VALUE) VALUES ('LAST_SYNC_TIME', ?)", [current_sync_time])

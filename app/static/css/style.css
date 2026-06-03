@@ -16,17 +16,17 @@
 }
 
 body.theme-dark {
-    --bg-color: #0f172a;
-    --text-color: #f8fafc;
-    --primary-color: #60a5fa;
-    --primary-hover: #3b82f6;
-    --card-bg: #1e293b;
-    --border-color: #334155;
+    --bg-color: #18181b;
+    --text-color: #f4f4f5;
+    --primary-color: #3b82f6;
+    --primary-hover: #2563eb;
+    --card-bg: #27272a;
+    --border-color: #3f3f46;
     
-    --tech-bg: #1e3a8a;
-    --history-bg: #14532d;
-    --photo-bg: #78350f;
-    --paper-bg: #334155;
+    --tech-bg: #27272a;
+    --history-bg: #27272a;
+    --photo-bg: #27272a;
+    --paper-bg: #27272a;
 }
 
 * {
@@ -74,9 +74,9 @@ header a.logo {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1500px;
     margin: 2rem auto;
-    padding: 0 1rem;
+    padding: 0 1.5rem;
 }
 
 /* Search Bar */
@@ -109,16 +109,17 @@ header a.logo {
 }
 
 .btn {
-    padding: 0.8rem 1.5rem;
+    padding: 0.6rem 1.2rem;
     background-color: var(--primary-color);
     color: white;
     border: none;
-    border-radius: 999px;
+    border-radius: 6px;
     font-size: 1rem;
     cursor: pointer;
     transition: var(--transition);
     text-decoration: none;
     display: inline-block;
+    width: auto;
 }
 
 .btn:hover {
@@ -137,7 +138,7 @@ header a.logo {
     background: #e0e7ff;
     color: #3730a3;
     padding: 0.3rem 0.8rem;
-    border-radius: 999px;
+    border-radius: 6px;
     margin: 0.3rem;
     font-size: 0.9rem;
     text-decoration: none;
@@ -185,6 +186,7 @@ header a.logo {
     border-radius: 4px;
     margin-bottom: 0.5rem;
     display: inline-block;
+    white-space: nowrap;
 }
 
 .card-title {
@@ -299,7 +301,7 @@ header a.logo {
    ============================================================ */
 a:visited, 
 .visited-link {
-    color: #2563eb !important;          /* kill purple visited-link colour - Force Blue */
+    color: #2563eb;          /* kill purple visited-link colour - Force Blue - No Important */
 }
 a:active,
 button:active {
@@ -385,7 +387,7 @@ button:active {
     background: #fff;
     color: #f59e0b;
     border: 2px solid #f59e0b;
-    border-radius: 999px;
+    border-radius: 6px;
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
@@ -419,14 +421,23 @@ button:active {
 .saved-search-dropdown summary {
     list-style: none;
     cursor: pointer;
-    padding: 0.6rem 1rem;
-    background: #f1f5f9;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    background: #e2e8f0;
+    border: none !important;
+    border-radius: 6px;
     font-size: 0.9rem;
     font-weight: 500;
     color: #334155;
     user-select: none;
+    outline: none;
+    display: inline-flex;
+    align-items: center;
+}
+.saved-search-dropdown summary::-webkit-details-marker,
+.saved-search-dropdown summary::marker,
+details summary::-webkit-details-marker,
+details summary::marker {
+    display: none !important;
 }
 .saved-search-dropdown summary::-webkit-details-marker { display: none; }
 .saved-search-dropdown[open] summary { border-radius: 8px 8px 0 0; }
@@ -509,3 +520,272 @@ button:active {
     border: 2px solid #000000 !important;
     font-weight: bold !important;
 }
+
+/* ============================================================
+   黑暗模式全局覆寫與配色優化
+   ============================================================ */
+
+/* 按鈕 visited 防禦，確保點選過後文字顏色不會變藍，維持本色 */
+a.btn:visited, 
+.btn:visited, 
+.btn-bookmark:visited,
+.page-link:visited,
+.admin-subnav a:visited {
+    color: inherit !important;
+}
+
+/* 黑暗模式全局配色 (theme-dark 與 admin-dark-mode 統一) */
+body.theme-dark,
+body.admin-dark-mode {
+    --bg-color: #18181b !important;
+    --text-color: #f4f4f5 !important;
+    --primary-color: #3f3f46 !important;
+    --primary-hover: #52525b !important;
+    --card-bg: #27272a !important;
+    --border-color: #3f3f46 !important;
+    
+    --tech-bg: #27272a !important;
+    --history-bg: #27272a !important;
+    --photo-bg: #27272a !important;
+    --paper-bg: #27272a !important;
+
+    background-color: #18181b !important;
+    color: #f4f4f5 !important;
+}
+
+/* 導覽列黑暗模式優化 */
+body.theme-dark header,
+body.admin-dark-mode header {
+    background-color: #27272a !important;
+    border-bottom: 1px solid #3f3f46 !important;
+}
+body.theme-dark header a.logo,
+body.admin-dark-mode header a.logo {
+    color: #ffffff !important;
+}
+body.theme-dark header a.logo span,
+body.admin-dark-mode header a.logo span {
+    color: #ffffff !important;
+}
+body.theme-dark .nav-links a,
+body.admin-dark-mode .nav-links a {
+    color: #cbd5e1 !important;
+}
+body.theme-dark .nav-links a:hover,
+body.admin-dark-mode .nav-links a:hover {
+    color: #ffffff !important;
+}
+
+/* 黑暗模式文字色彩防禦 */
+body.theme-dark h1, body.admin-dark-mode h1,
+body.theme-dark h2, body.admin-dark-mode h2,
+body.theme-dark h3, body.admin-dark-mode h3,
+body.theme-dark h4, body.admin-dark-mode h4,
+body.theme-dark h5, body.admin-dark-mode h5,
+body.theme-dark h6, body.admin-dark-mode h6,
+body.theme-dark label, body.admin-dark-mode label,
+body.theme-dark strong, body.admin-dark-mode strong {
+    color: #ffffff !important;
+}
+body.theme-dark p, body.admin-dark-mode p,
+body.theme-dark span, body.admin-dark-mode span,
+body.theme-dark td, body.admin-dark-mode td,
+body.theme-dark th, body.admin-dark-mode th,
+body.theme-dark li, body.admin-dark-mode li,
+body.theme-dark small, body.admin-dark-mode small {
+    color: #cbd5e1 !important;
+}
+
+/* 表格邊框黑暗模式優化 */
+body.theme-dark table, body.admin-dark-mode table,
+body.theme-dark tr, body.admin-dark-mode tr,
+body.theme-dark th, body.admin-dark-mode th,
+body.theme-dark td, body.admin-dark-mode td {
+    border-color: #3f3f46 !important;
+}
+
+/* 輸入框、下拉選單、文本域黑暗模式優化 */
+body.theme-dark input[type="text"], body.admin-dark-mode input[type="text"],
+body.theme-dark input[type="password"], body.admin-dark-mode input[type="password"],
+body.theme-dark select, body.admin-dark-mode select,
+body.theme-dark textarea, body.admin-dark-mode textarea {
+    background-color: #18181b !important;
+    color: #ffffff !important;
+    border: 1px solid #3f3f46 !important;
+}
+body.theme-dark input[readonly], body.admin-dark-mode input[readonly] {
+    background-color: #27272a !important;
+    color: #94a3b8 !important;
+}
+
+/* 按鈕黑暗模式配色對齊（排除 danger、success 類型按鈕） */
+body.theme-dark .btn:not(.btn-danger):not(.btn-danger-sm):not(.btn-success):not(.btn-outline-danger):not(.btn-outline-success),
+body.admin-dark-mode .btn:not(.btn-danger):not(.btn-danger-sm):not(.btn-success):not(.btn-outline-danger):not(.btn-outline-success) {
+    background-color: #3f3f46 !important;
+    color: #ffffff !important;
+    border: 1px solid #52525b !important;
+}
+body.theme-dark .btn:not(.btn-danger):not(.btn-danger-sm):not(.btn-success):not(.btn-outline-danger):not(.btn-outline-success):hover,
+body.admin-dark-mode .btn:not(.btn-danger):not(.btn-danger-sm):not(.btn-success):not(.btn-outline-danger):not(.btn-outline-success):hover {
+    background-color: #52525b !important;
+    border-color: #71717a !important;
+}
+
+/* 收藏按鈕黑暗模式 */
+body.theme-dark .btn-bookmark,
+body.admin-dark-mode .btn-bookmark {
+    background-color: #27272a !important;
+    color: #f59e0b !important;
+    border-color: #f59e0b !important;
+}
+body.theme-dark .btn-bookmark:hover,
+body.theme-dark .btn-bookmark.is-saved,
+body.admin-dark-mode .btn-bookmark:hover,
+body.admin-dark-mode .btn-bookmark.is-saved {
+    background-color: #f59e0b !important;
+    color: #18181b !important;
+}
+
+/* 關鍵字標籤黑暗模式 */
+body.theme-dark .keyword-tag,
+body.admin-dark-mode .keyword-tag {
+    background: #3f3f46 !important;
+    color: #f4f4f5 !important;
+    border-color: #52525b !important;
+}
+body.theme-dark .keyword-tag:hover,
+body.admin-dark-mode .keyword-tag:hover {
+    background: #52525b !important;
+    color: #ffffff !important;
+}
+
+/* 成功類型按鈕黑暗模式 */
+body.theme-dark .btn-success,
+body.admin-dark-mode .btn-success,
+body.theme-dark .btn-outline-success,
+body.admin-dark-mode .btn-outline-success {
+    background-color: #064e3b !important;
+    color: #a7f3d0 !important;
+    border: 1px solid #047857 !important;
+}
+body.theme-dark .btn-success:hover,
+body.admin-dark-mode .btn-success:hover,
+body.theme-dark .btn-outline-success:hover,
+body.admin-dark-mode .btn-outline-success:hover {
+    background-color: #0f766e !important;
+    color: #ffffff !important;
+}
+
+/* 危險/刪除類型按鈕黑暗模式 */
+body.theme-dark .btn-danger,
+body.admin-dark-mode .btn-danger,
+body.theme-dark .btn-danger-sm,
+body.admin-dark-mode .btn-danger-sm,
+body.theme-dark .btn-outline-danger,
+body.admin-dark-mode .btn-outline-danger {
+    background-color: #7f1d1d !important;
+    color: #fecaca !important;
+    border: 1px solid #b91c1c !important;
+}
+body.theme-dark .btn-danger:hover,
+body.admin-dark-mode .btn-danger:hover,
+body.theme-dark .btn-danger-sm:hover,
+body.admin-dark-mode .btn-danger-sm:hover,
+body.theme-dark .btn-outline-danger:hover,
+body.admin-dark-mode .btn-outline-danger:hover {
+    background-color: #991b1b !important;
+    color: #ffffff !important;
+}
+
+/* 二階段驗證彈窗與背景黑暗模式 */
+body.theme-dark *[style*="background: white"],
+body.theme-dark *[style*="background:white"],
+body.theme-dark *[style*="background: #fff"],
+body.theme-dark *[style*="background:#fff"],
+body.theme-dark *[style*="background: #ffffff"],
+body.theme-dark *[style*="background:#ffffff"],
+body.theme-dark *[style*="background-color: white"],
+body.theme-dark *[style*="background-color:white"],
+body.theme-dark *[style*="background-color: #ffffff"],
+body.theme-dark *[style*="background-color:#ffffff"],
+body.theme-dark *[style*="background: #f8fafc"],
+body.theme-dark *[style*="background:#f8fafc"],
+body.theme-dark *[style*="background-color: #f8fafc"],
+body.theme-dark *[style*="background-color:#f8fafc"],
+body.theme-dark *[style*="background: #fffbeb"],
+body.theme-dark *[style*="background:#fffbeb"],
+body.theme-dark *[style*="background-color: #fffbeb"],
+body.theme-dark *[style*="background-color:#fffbeb"],
+body.theme-dark *[style*="background: #ecfdf5"],
+body.theme-dark *[style*="background:#ecfdf5"],
+body.theme-dark *[style*="background-color: #ecfdf5"],
+body.theme-dark *[style*="background-color:#ecfdf5"],
+body.theme-dark *[style*="background: rgba(255, 255, 255"],
+body.theme-dark *[style*="background-color: rgba(255, 255, 255"],
+
+body.admin-dark-mode *[style*="background: white"],
+body.admin-dark-mode *[style*="background:white"],
+body.admin-dark-mode *[style*="background: #fff"],
+body.admin-dark-mode *[style*="background:#fff"],
+body.admin-dark-mode *[style*="background: #ffffff"],
+body.admin-dark-mode *[style*="background:#ffffff"],
+body.admin-dark-mode *[style*="background-color: white"],
+body.admin-dark-mode *[style*="background-color:white"],
+body.admin-dark-mode *[style*="background-color: #ffffff"],
+body.admin-dark-mode *[style*="background-color:#ffffff"],
+body.admin-dark-mode *[style*="background: #f8fafc"],
+body.admin-dark-mode *[style*="background:#f8fafc"],
+body.admin-dark-mode *[style*="background-color: #f8fafc"],
+body.admin-dark-mode *[style*="background-color:#f8fafc"],
+body.admin-dark-mode *[style*="background: #fffbeb"],
+body.admin-dark-mode *[style*="background:#fffbeb"],
+body.admin-dark-mode *[style*="background-color: #fffbeb"],
+body.admin-dark-mode *[style*="background-color:#fffbeb"],
+body.admin-dark-mode *[style*="background: #ecfdf5"],
+body.admin-dark-mode *[style*="background:#ecfdf5"],
+body.admin-dark-mode *[style*="background-color: #ecfdf5"],
+body.admin-dark-mode *[style*="background-color:#ecfdf5"],
+body.admin-dark-mode *[style*="background: rgba(255, 255, 255"],
+body.admin-dark-mode *[style*="background-color: rgba(255, 255, 255"] {
+    background: #27272a !important;
+    background-color: #27272a !important;
+    color: #f4f4f5 !important;
+    border-color: #3f3f46 !important;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3) !important;
+}
+
+/* 黑暗模式分頁與活動按鈕標示優化 */
+body.theme-dark .btn.active,
+body.admin-dark-mode .btn.active,
+body.theme-dark .browse-tab-btn.active,
+body.admin-dark-mode .browse-tab-btn.active {
+    background-color: #52525b !important;
+    color: #ffffff !important;
+    border: 2px solid #60a5fa !important;
+}
+
+/* 全域內容容器加寬防折行規則（大於 800px 的主要後台卡片一律放寬 300px） */
+div[style*="max-width: 800px"], div[style*="max-width:800px"] { max-width: 1100px !important; }
+div[style*="max-width: 850px"], div[style*="max-width:850px"] { max-width: 1150px !important; }
+div[style*="max-width: 900px"], div[style*="max-width:900px"] { max-width: 1200px !important; }
+div[style*="max-width: 950px"], div[style*="max-width:950px"] { max-width: 1250px !important; }
+div[style*="max-width: 1000px"], div[style*="max-width:1000px"] { max-width: 1300px !important; }
+
+/* 移除搜尋按鈕右側 details 元件之一切邊線與焦點外框 */
+.saved-search-dropdown,
+.saved-search-dropdown summary,
+details,
+details summary {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+.btn:focus,
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+

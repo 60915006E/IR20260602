@@ -70,5 +70,6 @@
   "sso_token_url": "",
   "sso_user_info_url": "",
   "search_mode": "cache",
-  "search_blacklist": "羅主要作者"
+  "search_blacklist": "羅主要作者",
+  "show_wordcloud": false
 }

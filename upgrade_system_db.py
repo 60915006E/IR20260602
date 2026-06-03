@@ -27,6 +27,18 @@ def upgrade_database():
         # 3. 啟用 synchronous=NORMAL
         cur.execute("PRAGMA synchronous=NORMAL;")
         
+        # 4. 建立 DOWNLOAD_LOGS 審計日誌表
+        print("-> 檢查並建立 DOWNLOAD_LOGS 審計日誌表...")
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS DOWNLOAD_LOGS (
+            ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            DOWNLOAD_TIME TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            SYS_NO TEXT,
+            USER_ID TEXT,
+            IP_ADDRESS TEXT
+        )
+        """)
+        
         conn.commit()
         conn.close()
         

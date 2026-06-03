@@ -230,7 +230,7 @@
             <div class="d-flex gap-2 mb-2 align-items-center news-row">
                 <input type="text" class="form-control" placeholder="標題" value="${n.title}" data-field="title">
                 <input type="text" class="form-control w-50" placeholder="內容" value="${n.content}" data-field="content">
-                <button class="btn btn-sm btn-danger" onclick="removeNews(${idx})">✖</button>
+                <button class="btn btn-sm btn-danger" onclick="removeNews(${idx})"></button>
             </div>`;
         });
     }
@@ -243,7 +243,7 @@
             <div class="d-flex gap-2 mb-2 align-items-center template-row">
                 <input type="text" class="form-control" placeholder="檔案名稱" value="${t.filename}" data-field="filename">
                 <input type="text" class="form-control w-50" placeholder="檔案超連結" value="${t.url}" data-field="url">
-                <button class="btn btn-sm btn-danger" onclick="removeTemplate(${idx})">✖</button>
+                <button class="btn btn-sm btn-danger" onclick="removeTemplate(${idx})"></button>
             </div>`;
         });
     }
@@ -273,18 +273,18 @@
             const response = await fetch("{{ url_for('search_test.trigger_sync_index') }}", { method: 'POST' });
             const data = await response.json();
             if (response.ok) {
-                resDiv.innerText = "✅ 同步完成！\n" + (data.output || "（無輸出）");
+                resDiv.innerText = " 同步完成！\n" + (data.output || "（無輸出）");
                 btn.innerHTML = '<i class="bi bi-check-circle"></i> 同步完成';
                 statusEl.textContent = '上次執行：' + new Date().toLocaleTimeString('zh-TW');
             } else {
                 resDiv.style.color = '#fca5a5';
-                resDiv.innerText = "❌ 同步失敗:\n" + (data.message || "未知錯誤");
+                resDiv.innerText = " 同步失敗:\n" + (data.message || "未知錯誤");
                 btn.innerHTML = '<i class="bi bi-x-circle"></i> 發生錯誤';
                 statusEl.textContent = '';
             }
         } catch (err) {
             resDiv.style.color = '#fca5a5';
-            resDiv.innerText = "❌ 網路呼叫失敗:\n" + err;
+            resDiv.innerText = " 網路呼叫失敗:\n" + err;
             btn.innerHTML = '<i class="bi bi-x-circle"></i> 連線失敗';
         } finally {
             setTimeout(() => {
@@ -311,17 +311,17 @@
             const response = await fetch("{{ url_for('search_test.trigger_sync_index') }}", { method: 'POST' });
             const data = await response.json();
             if (response.ok) {
-                resDiv.innerText = "🕐 排程執行完成！\n" + (data.output || "（無輸出）");
+                resDiv.innerText = " 排程執行完成！\n" + (data.output || "（無輸出）");
                 btn.innerHTML = '<i class="bi bi-check-circle"></i> 排程完成';
                 statusEl.textContent = '排程完成時間：' + new Date().toLocaleTimeString('zh-TW');
             } else {
                 resDiv.style.color = '#fca5a5';
-                resDiv.innerText = "❌ 排程失敗:\n" + (data.message || "未知錯誤");
+                resDiv.innerText = " 排程失敗:\n" + (data.message || "未知錯誤");
                 btn.innerHTML = '<i class="bi bi-x-circle"></i> 排程失敗';
             }
         } catch (err) {
             resDiv.style.color = '#fca5a5';
-            resDiv.innerText = "❌ 排程呼叫失敗:\n" + err;
+            resDiv.innerText = " 排程呼叫失敗:\n" + err;
         } finally {
             setTimeout(() => {
                 btn.disabled = false;
@@ -356,19 +356,19 @@
             });
             const data = await res.json();
             if (res.ok) {
-                resDiv.innerText = '✅ 設定儲存成功，立即全站生效！'; 
+                resDiv.innerText = ' 設定儲存成功，立即全站生效！'; 
                 resDiv.style.color = '#15803d';
                 resDiv.style.backgroundColor = '#f0fdf4';
                 // 更新本地 portalConfig 物件，確保下次局部儲存時資料最新
                 Object.assign(portalConfig, newPayload);
                 setTimeout(() => { resDiv.style.display = 'none'; }, 3000);
             } else {
-                resDiv.innerText = '❌ ' + data.message; 
+                resDiv.innerText = ' ' + data.message; 
                 resDiv.style.color = '#b91c1c';
                 resDiv.style.backgroundColor = '#fef2f2';
             }
         } catch (err) {
-            resDiv.innerText = '❌ ' + err.message; 
+            resDiv.innerText = ' ' + err.message; 
             resDiv.style.color = '#b91c1c';
             resDiv.style.backgroundColor = '#fef2f2';
         }

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container" style="max-width: 900px; padding: 20px; margin-top: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px;">
+        <div>
+            <h2 class="fw-bold" style="color: #10b981; margin: 0; font-family: 'Outfit', sans-serif;">
+                <i class="bi bi-file-earmark-arrow-down"></i> 範本下載與參考文件
+            </h2>
+            <p class="text-muted" style="margin: 5px 0 0; font-size: 0.95rem;">
+                下載行政作業表單、技術報告範本以及相關說明文件。
+            </p>
+        </div>
+        <a href="{{ url_for('search.index') }}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-house"></i> 返回首頁
+        </a>
+    </div>
+
+    <div class="card" style="background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 24px; margin-bottom: 50px;">
+        <div class="table-responsive">
+            <table class="table table-hover" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #e2e8f0; background: #fafafa;">
+                        <th style="padding: 15px; text-align: left; width: 10%;">序號</th>
+                        <th style="padding: 15px; text-align: left; width: 65%;">範本檔案名稱</th>
+                        <th style="padding: 15px; text-align: center; width: 25%;">操作選項</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tpl in templates_list %}
+                    <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;">
+                        <td style="padding: 15px; color: #64748b; font-weight: bold;">#{{ loop.index }}</td>
+                        <td style="padding: 15px; color: #1e293b; font-weight: 600; font-size: 1.05rem;">
+                            <i class="bi bi-file-earmark-text" style="color: #10b981; margin-right: 5px;"></i>
+                            {{ tpl.filename }}
+                        </td>
+                        <td style="padding: 15px; text-align: center;">
+                            <a href="{{ tpl.url }}" class="btn btn-sm btn-success" style="background-color: #10b981; border: none; padding: 6px 16px; font-weight: bold; border-radius: 6px; text-decoration: none;" target="_blank">
+                                <i class="bi bi-download"></i> 點擊下載
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center text-muted" style="padding: 30px;">
+                            <i class="bi bi-folder-x" style="font-size: 3rem; color: #94a3b8; display: block; margin-bottom: 10px;"></i>
+                            目前尚無任何參考範本提供下載。
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

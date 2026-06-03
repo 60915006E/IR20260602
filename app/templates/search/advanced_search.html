@@ -117,7 +117,7 @@
         // Remove btn
         const rmBtn = document.createElement('button');
         rmBtn.type = 'button';
-        rmBtn.textContent = '✖';
+        rmBtn.textContent = '';
         rmBtn.style.background = 'none';
         rmBtn.style.border = 'none';
         rmBtn.style.color = '#ef4444';
@@ -182,7 +182,7 @@
             li.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <a href="javascript:void(0)" onclick='applySearch(${JSON.stringify(item.conditions).replace(/'/g, "&#39;")})'>${item.name}</a>
-                    <button class="btn btn-sm btn-danger" onclick="deleteSearch(${item.id})">✖</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteSearch(${item.id})"></button>
                 </div>
                 <small style="color:#64748b;">${item.created_at}</small>
             `;

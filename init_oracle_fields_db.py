@@ -36,7 +36,7 @@ def run_init():
         "技術報告": "VI_IRLIB_REPORT_MAIN",
         "史政": "VI_IRLIB_HISTORY_MAIN",
         "史政照片": "VI_IRLIB_PHOTO_MAIN",
-        "逸光報": "VI_IRLIB_PAPER_MAIN"
+        "逸光報": "VI_IRLIB_PAPER"
     }
     
     # 2. Check if table is empty, migrate if empty
