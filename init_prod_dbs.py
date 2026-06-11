@@ -180,10 +180,12 @@ def init_mock_data_db():
         report_data = []
         for i in range(1, 26):
             rp_no = f"R{i:03d}"
+            sec_lv_cde = "NOR" if rp_no in ["R001", "R002"] else "一般"
+            sec_lv_name = "一般"
             report_data.append((
                 rp_no, f"自動生成技術報告 {i}", f"這是關於第 {i} 代技術的研究報告", "羅作者", 
-                f"2026-01-{i%28+1:02d}", "一般", "2026", "系統中心", "C01", "分類A", 
-                "T01", "類型A", "CSI名稱", "一般", "屬性", "N", "否", 
+                f"2026-01-{i%28+1:02d}", sec_lv_cde, "2026", "系統中心", "C01", "分類A", 
+                "T01", "類型A", "CSI名稱", sec_lv_name, "屬性", "N", "否", 
                 "推廣名稱", "TRAIN01", "訓練名", "描述", "應用", "羅主要作者", 
                 "主機名", "2026-12-31", f"{i*10}頁", "Y",
                 "出版單位", f"2026-01-{i%28+1:02d}", "D1"
@@ -244,13 +246,49 @@ def init_mock_data_db():
 
         # 全文下載關聯表 (VI_IRLIB_FILE)
         cursor.execute("DROP TABLE IF EXISTS VI_IRLIB_FILE")
-        cursor.execute('''CREATE TABLE VI_IRLIB_FILE (OVC_SYS_NO TEXT PRIMARY KEY, OVC_GUID TEXT)''')
+        cursor.execute('''CREATE TABLE VI_IRLIB_FILE (OVC_SYS_NO TEXT, OVC_GUID TEXT)''')
         file_data = []
         for i in range(1, 101):
             prefix = 'R' if i <= 25 else ('H' if i <= 50 else ('N' if i <= 75 else 'P'))
             sysno = f"{prefix}{i:03d}"
-            file_data.append((sysno, f"GUID-{sysno}"))
+            if sysno == 'P076':
+                file_data.append((sysno, "GUID-P076-1"))
+                file_data.append((sysno, "GUID-P076-2"))
+                file_data.append((sysno, "GUID-P076-3"))
+            else:
+                file_data.append((sysno, f"GUID-{sysno}"))
         cursor.executemany("INSERT INTO VI_IRLIB_FILE (OVC_SYS_NO, OVC_GUID) VALUES (?, ?)", file_data)
+        
+        # 額外為史政照片 P076 建立多個實體模擬照片檔案以供測試輪播
+        p076_dir = os.path.join(os.path.dirname(__file__), 'data', 'IR', 'P076')
+        p076_dirs = [p076_dir]
+        storage_root = os.environ.get('FILE_STORAGE_ROOT', 'E:/IR')
+        if os.path.exists(storage_root):
+            p076_dirs.append(os.path.join(storage_root, 'P076'))
+            
+        # 使用 Pillow 繪製真實的 600x400 模擬相片，防止 1 像素純色導致前台呈現空白
+        try:
+            from PIL import Image, ImageDraw
+            for d in p076_dirs:
+                os.makedirs(d, exist_ok=True)
+                for j in range(1, 7):
+                    # 建立 600x400 帶有漸層藍色底的圖片
+                    img = Image.new('RGB', (600, 400), color=(30, 41, 59 + j*20))
+                    draw = ImageDraw.Draw(img)
+                    # 畫一個黃色相框
+                    draw.rectangle([20, 20, 580, 380], outline=(245, 158, 11), width=5)
+                    # 寫上文字
+                    draw.text((200, 180), f"PHOTO {j} - SAMPLE", fill=(255, 255, 255))
+                    img.save(os.path.join(d, f'pic{j}.jpg'), 'JPEG', quality=90)
+            print("【成功】使用 Pillow 繪製 6 張具備高對比視覺的模擬 JPG 相片。")
+        except Exception as draw_err:
+            pixel_jpg_data = b'\xff\xd8\xff\xdb\x00\x43\x00\x08\x06\x06\x07\x06\x05\x08\x07\x07\x07\t\t\x08\n\x0c\x14\r\x0c\x0b\x0b\x0c\x19\x12\x13\x0f\x14\x1d\x1a\x1f\x1e\x1d\x1a\x1c\x1c$&\',#\.(g\xff\xc0\x00\x0b\x08\x00\x01\x00\x01\x01\x01\x11\x00\xff\xc4\x00\x1f\x00\x00\x01\x05\x01\x01\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\xff\xda\x00\x0c\x01\x01\x00\x00\x3f\x00\x37\xff\xd9'
+            for d in p076_dirs:
+                os.makedirs(d, exist_ok=True)
+                for j in range(1, 7):
+                    with open(os.path.join(d, f'pic{j}.jpg'), 'wb') as img_f:
+                        img_f.write(pixel_jpg_data)
+
         
         # 額外建立證明表 (VI_IRLIB_RP_PROVEDATA)
         cursor.execute("DROP TABLE IF EXISTS VI_IRLIB_RP_PROVEDATA")

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}檔案未尋獲 - 機構典藏系統{% endblock %}
+{% block content %}
+<div style="background: var(--card-bg); border-radius: 12px; padding: 3rem 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 600px; margin: 4rem auto; text-align: center; border: 1px solid var(--border-color);">
+    <div style="margin-bottom: 2rem; color: #dc2626; font-size: 4rem;">
+        <i class="bi bi-file-earmark-x"></i>
+    </div>
+    
+    <h2 style="color: var(--text-color); font-weight: 700; margin-bottom: 1rem; font-size: 1.8rem;">檔案未尋獲</h2>
+    <p style="color: #64748b; font-size: 1.1rem; margin-bottom: 2.5rem; line-height: 1.8;">
+        很抱歉，本篇書目（系統號：<strong>{{ sys_no }}</strong>）目前尚未上傳或無對應之全文實體檔案。<br>
+        若有任何疑問，請洽本館服務窗口。
+    </p>
+    
+    <div style="display: flex; justify-content: center; gap: 1rem;">
+        <a href="{{ url_for('search.get_detail', token=sys_no) }}" class="btn" style="background-color: var(--primary-color); color: white; font-weight: 600; padding: 0.75rem 2rem; border-radius: 6px; text-decoration: none; display: inline-block;">
+            返回詳目頁
+        </a>
+    </div>
+</div>
+{% endblock %}

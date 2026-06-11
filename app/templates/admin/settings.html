@@ -17,7 +17,7 @@
     </div>
 
     <h2 style="color: var(--primary-color); padding-bottom: 0.5rem; margin-bottom: 1.5rem; font-weight: 700;">系統基本組態設定</h2>
-    <p style="color: #64748b; margin-bottom: 2rem;">系統管理面板：在此配置全站的使用者認證機制、前台「等級修改說明」自訂公告、以及相關的外接 API 與搜尋引擎模式切換。</p>
+    <p style="color: #64748b; margin-bottom: 2rem;">系統管理面板：在此配置全站的使用者認證機制、前台「等級修改說明」自訂公告、以及相關的外接 API 與查詢引擎模式切換。</p>
     
     {% if msg %}
     <div style="background: #ecfdf5; color: #047857; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid #10b981; font-weight: 600;">
@@ -94,15 +94,27 @@
             </div>
         </div>
 
-        {# ── 卡片區塊 3: 全站搜尋與跳轉設定 ── #}
+        {# ── 卡片區塊 2-B: 首頁 Footer 文字 ── #}
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
             <h4 style="color: #1e293b; margin-top: 0; margin-bottom: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                <i class="bi bi-gear-wide-connected"></i> 全站檢索模式與跳轉設定
+                <i class="bi bi-body-text"></i> 首頁 Footer 聯絡資訊文字
+            </h4>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; color: #334155; margin-bottom: 0.5rem;">Footer 說明文字：</label>
+                <textarea name="footer_text" class="form-control" rows="2" placeholder="例如：本館地址：100201 臺北市中山南路20號 電話：02-XXXX-XXXX" style="resize: vertical; font-family: sans-serif; font-size: 0.95rem;">{{ config.get('footer_text', '') }}</textarea>
+                <small style="color: #64748b; display: block; margin-top: 0.5rem;">此文字將顯示於首頁下方 Footer 區域。</small>
+            </div>
+        </div>
+
+        {# ── 卡片區塊 3: 全站查詢與跳轉設定 ── #}
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+            <h4 style="color: #1e293b; margin-top: 0; margin-bottom: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                <i class="bi bi-gear-wide-connected"></i> 全站查詢與跳轉設定
             </h4>
             
             <div style="margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
                 <div>
-                    <label style="display: block; font-weight: 600; color: #334155; margin-bottom: 0.5rem;">預設搜尋檢索模式：</label>
+                    <label style="display: block; font-weight: 600; color: #334155; margin-bottom: 0.5rem;">預設查詢檢索模式：</label>
                     <select name="search_mode" class="form-control">
                         <option value="cache" {% if config.get('search_mode', 'cache') == 'cache' %}selected{% endif %}>本地 WAL SQLite 高併發快取模式 (預設，推薦)</option>
                         <option value="oracle" {% if config.get('search_mode') == 'oracle' %}selected{% endif %}>直連 Oracle 19c 資料庫模式 (即時，負載較高)</option>
@@ -116,16 +128,16 @@
                 </div>
             </div>
             <div style="margin-top: 1.5rem; border-top: 1px dashed #cbd5e1; padding-top: 1.5rem;">
-                <label style="display: block; font-weight: 600; color: #334155; margin-bottom: 0.5rem;">熱門搜尋黑名單 (以逗號或換行分隔)：</label>
+                <label style="display: block; font-weight: 600; color: #334155; margin-bottom: 0.5rem;">熱門查詢黑名單 (以逗號或換行分隔)：</label>
                 <textarea name="search_blacklist" class="form-control" rows="3" placeholder="例如: 測試, test, 密碼" style="resize: vertical; font-family: sans-serif; font-size: 0.95rem;">{{ config.get('search_blacklist', '') }}</textarea>
-                <small style="color: #64748b; display: block; margin-top: 0.5rem;">在此設定的關鍵字，將不會出記在前台首頁「近期熱門搜尋」以及搜尋列的自動推薦 (autocomplete) 中。</small>
+                <small style="color: #64748b; display: block; margin-top: 0.5rem;">在此設定的關鍵字，將不會出記在前台首頁「近期熱門查詢」以及查詢列的自動推薦 (autocomplete) 中。</small>
             </div>
             <div style="margin-top: 1.5rem; border-top: 1px dashed #cbd5e1; padding-top: 1.5rem;">
                 <label style="display: flex; align-items: center; font-weight: 600; color: #334155; cursor: pointer;">
                     <input type="checkbox" name="show_wordcloud" {% if config.get('show_wordcloud', True) %}checked{% endif %} style="transform: scale(1.3); margin-right: 10px;">
-                    在前台首頁呈現「近期熱門搜尋」文字雲
+                    在前台首頁呈現「近期熱門查詢」文字雲
                 </label>
-                <small style="color: #64748b; display: block; margin-top: 0.5rem; margin-left: 25px;">開啟後，前台首頁將會展示由讀者檢索歷史動態生成之「近期熱門搜尋」詞彙雲；關閉則隱藏該區塊。</small>
+                <small style="color: #64748b; display: block; margin-top: 0.5rem; margin-left: 25px;">開啟後，前台首頁將會展示由讀者檢索歷史動態生成之「近期熱門查詢」詞彙雲；關閉則隱藏該區塊。</small>
             </div>
             <div style="margin-top: 1.5rem; border-top: 1px dashed #cbd5e1; padding-top: 1.5rem; background: #fff1f2; padding: 1rem; border-radius: 6px; border: 1px solid #fecdd3;">
                 <label style="display: flex; align-items: center; font-weight: 600; color: #991b1b; cursor: pointer;">
@@ -142,5 +154,156 @@
             <button class="btn" type="submit" style="background-color: var(--primary-color); color: white; border: none; font-weight: 600; padding: 0.75rem 2rem; border-radius: 6px; cursor: pointer;">儲存系統組態設定</button>
         </div>
     </form>
+
+    {# ── 最新消息管理（獨立 form，不與系統設定合併）── #}
+    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 1.5rem; margin-top: 2rem;">
+        <h4 style="color: #1d4ed8; margin-top: 0; margin-bottom: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+            <i class="bi bi-newspaper"></i> 最新消息管理
+        </h4>
+
+        {# 現有消息清單 #}
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; font-weight: 600; color: #1e3a8a; margin-bottom: 0.75rem;">目前消息清單：</label>
+            {% if config.get('news') %}
+                {% for news_item in config.get('news', []) %}
+                <div style="background: white; border: 1px solid #dbeafe; border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 0.5rem;">
+                    <div style="display: flex; align-items: flex-start; gap: 10px;">
+                        <div style="flex: 1;">
+                            <strong style="color: #1e3a8a;">{{ news_item.title }}</strong>
+                            <span style="font-size: 0.8rem; background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: bold;">順序: {{ news_item.get('sort_order', 9999) }}</span>
+                            <p style="margin: 4px 0 0; color: #475569; font-size: 0.9rem;">{{ news_item.content }}</p>
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button type="button" class="btn btn-sm" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; white-space: nowrap;" onclick="var el = document.getElementById('news-edit-{{ news_item.id }}'); el.style.display = el.style.display === 'none' ? 'block' : 'none';">
+                                <i class="bi bi-pencil-square"></i> 編輯
+                            </button>
+                            <form action="{{ url_for('admin.delete_news', news_id=news_item.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('確定刪除此消息？');">
+                                <button type="submit" class="btn btn-sm" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; white-space: nowrap;">
+                                    <i class="bi bi-trash"></i> 刪除
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    {# Inline 編輯表單 #}
+                    <div id="news-edit-{{ news_item.id }}" style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #e2e8f0; background: #f8fafc; padding: 10px; border-radius: 6px;">
+                        <form action="{{ url_for('admin.edit_news', news_id=news_item.id) }}" method="POST">
+                            <label style="display: block; font-size: 0.85rem; font-weight: bold; color: #475569; margin-bottom: 5px;">編輯消息內容：</label>
+                            <div style="display: grid; grid-template-columns: 1.5fr 2.5fr 100px auto; gap: 8px; align-items: center;">
+                                <input type="text" name="news_title" value="{{ news_item.title }}" class="form-control" required maxlength="60" style="font-size: 0.88rem;">
+                                <input type="text" name="news_content" value="{{ news_item.content }}" class="form-control" required maxlength="200" style="font-size: 0.88rem;">
+                                <input type="number" name="sort_order" value="{{ news_item.get('sort_order', 9999) }}" class="form-control" required style="font-size: 0.88rem;" placeholder="顯示順序">
+                                <div style="display: flex; gap: 4px;">
+                                    <button type="submit" class="btn btn-sm btn-primary" style="white-space: nowrap;">儲存</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" style="white-space: nowrap;" onclick="document.getElementById('news-edit-{{ news_item.id }}').style.display='none'">取消</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p style="color: #94a3b8; font-size: 0.9rem;">目前尚無最新消息。</p>
+            {% endif %}
+        </div>
+
+        {# 新增消息 #}
+        <form action="{{ url_for('admin.add_news') }}" method="POST">
+            <label style="display: block; font-weight: 600; color: #1e3a8a; margin-bottom: 0.5rem;">新增一則消息：</label>
+            <div style="display: grid; grid-template-columns: 1.5fr 2.5fr 100px auto; gap: 10px; align-items: start;">
+                <div>
+                    <input type="text" name="news_title" class="form-control" placeholder="標題" required maxlength="60" style="font-size: 0.9rem;">
+                </div>
+                <div>
+                    <input type="text" name="news_content" class="form-control" placeholder="消息內容" required maxlength="200" style="font-size: 0.9rem;">
+                </div>
+                <div>
+                    <input type="number" name="sort_order" class="form-control" placeholder="順序" value="9999" required style="font-size: 0.9rem;">
+                </div>
+                <div>
+                    <button type="submit" class="btn" style="background-color: #2563eb; color: white; font-weight: 600; white-space: nowrap;">
+                        <i class="bi bi-plus-circle"></i> 新增
+                    </button>
+                </div>
+            </div>
+            <small style="color: #64748b; margin-top: 0.4rem; display: block;">最多可顯示 5 則，超出部分僅在「查看更多消息」頁面顯示。</small>
+        </form>
+    </div>
+
+    {# ── 範本下載管理（獨立 form）── #}
+    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem; margin-bottom: 2rem;">
+        <h4 style="color: #166534; margin-top: 0; margin-bottom: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+            <i class="bi bi-file-earmark-arrow-down"></i> 範本下載管理
+        </h4>
+
+        {# 現有範本清單 #}
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; font-weight: 600; color: #14532d; margin-bottom: 0.75rem;">目前範本清單：</label>
+            {% if config.get('templates') %}
+                {% for tpl_item in config.get('templates', []) %}
+                <div style="background: white; border: 1px solid #bbf7d0; border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="flex: 1;">
+                            <strong style="color: #166534;"><i class="bi bi-file-earmark-text"></i> {{ tpl_item.filename }}</strong>
+                            <span style="font-size: 0.8rem; background: #dcfce7; color: #15803d; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: bold;">順序: {{ tpl_item.get('sort_order', 9999) }}</span>
+                            <span style="margin-left: 15px; font-size: 0.85rem; color: #64748b;">{{ tpl_item.url }}</span>
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button type="button" class="btn btn-sm" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; white-space: nowrap;" onclick="var el = document.getElementById('tpl-edit-{{ tpl_item.id }}'); el.style.display = el.style.display === 'none' ? 'block' : 'none';">
+                                <i class="bi bi-pencil-square"></i> 編輯
+                            </button>
+                            <form action="{{ url_for('admin.delete_template', tpl_id=tpl_item.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('確定刪除此範本？');">
+                                <button type="submit" class="btn btn-sm" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; white-space: nowrap;">
+                                    <i class="bi bi-trash"></i> 刪除
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    {# Inline 編輯表單 #}
+                    <div id="tpl-edit-{{ tpl_item.id }}" style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #e2e8f0; background: #f8fafc; padding: 10px; border-radius: 6px;">
+                        <form action="{{ url_for('admin.edit_template', tpl_id=tpl_item.id) }}" method="POST">
+                            <label style="display: block; font-size: 0.85rem; font-weight: bold; color: #475569; margin-bottom: 5px;">編輯範本內容：</label>
+                            <div style="display: grid; grid-template-columns: 1.5fr 2.5fr 100px auto; gap: 8px; align-items: center;">
+                                <input type="text" name="tpl_filename" value="{{ tpl_item.filename }}" class="form-control" required maxlength="80" style="font-size: 0.88rem;">
+                                <input type="text" name="tpl_url" value="{{ tpl_item.url }}" class="form-control" required maxlength="500" style="font-size: 0.88rem;">
+                                <input type="number" name="sort_order" value="{{ tpl_item.get('sort_order', 9999) }}" class="form-control" required style="font-size: 0.88rem;" placeholder="顯示順序">
+                                <div style="display: flex; gap: 4px;">
+                                    <button type="submit" class="btn btn-sm btn-success" style="white-space: nowrap;">儲存</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" style="white-space: nowrap;" onclick="document.getElementById('tpl-edit-{{ tpl_item.id }}').style.display='none'">取消</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p style="color: #94a3b8; font-size: 0.9rem;">目前尚無範本。</p>
+            {% endif %}
+        </div>
+
+        {# 新增範本 #}
+        <form action="{{ url_for('admin.add_template') }}" method="POST">
+            <label style="display: block; font-weight: 600; color: #14532d; margin-bottom: 0.5rem;">新增一個範本：</label>
+            <div style="display: grid; grid-template-columns: 1.5fr 2.5fr 100px auto; gap: 10px; align-items: start;">
+                <div>
+                    <input type="text" name="tpl_filename" class="form-control" placeholder="範本名稱（例：投稿格式.docx）" required maxlength="80" style="font-size: 0.9rem;">
+                </div>
+                <div>
+                    <input type="text" name="tpl_url" class="form-control" placeholder="下載連結（例：https://...）" required maxlength="500" style="font-size: 0.9rem;">
+                </div>
+                <div>
+                    <input type="number" name="sort_order" class="form-control" placeholder="順序" value="9999" required style="font-size: 0.9rem;">
+                </div>
+                <div>
+                    <button type="submit" class="btn" style="background-color: #059669; color: white; font-weight: 600; white-space: nowrap;">
+                        <i class="bi bi-plus-circle"></i> 新增
+                    </button>
+                </div>
+            </div>
+            <small style="color: #64748b; margin-top: 0.4rem; display: block;">URL 請輸入可直接下載的完整連結（含 https://）或相對路徑。</small>
+        </form>
+    </div>
+
 </div>
 {% endblock %}

@@ -51,7 +51,10 @@ header {
     align-items: center;
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 1000;
+    /* 確保 sticky 滾動時背景不透明，防止頁面內容穿透 */
+    backdrop-filter: blur(0px);
+    overflow: visible;
 }
 
 header a.logo {
@@ -788,4 +791,13 @@ textarea:focus {
     outline: none !important;
     box-shadow: none !important;
 }
+
+/* 黑暗模式下相片輪播提示文字配色 */
+body.theme-dark .more-photos-tip,
+body.admin-dark-mode .more-photos-tip {
+    background-color: #78350f !important;
+    color: #fef3c7 !important;
+    border: 1px solid #d97706 !important;
+}
+
 

@@ -104,6 +104,9 @@ def field_settings():
             
             with open(Config.FIELDS_CONFIG_PATH, 'w', encoding='utf-8') as f:
                 json.dump(fields_config, f, ensure_ascii=False, indent=2)
+            
+            # 立即連動同步至資料庫中，更新資料庫內的 FIELD_LABEL 與 SORT_ORDER
+            sync_fields_config_with_oracle_db()
                     
             log_audit('Admin_Config', session['user_id'], request.remote_addr, 'fields_config.json', "管理員動態抽換了系統顯示的白名單查詢欄位")
             return redirect(url_for('admin.field_settings', msg="succ"))
@@ -229,6 +232,13 @@ def manage_users():
                 "DELETE FROM USERS WHERE USER_ID = ?",
                 [user_id]
             )
+        elif action == 'change_role':
+            new_role = request.form.get('new_role', 'testuser')
+            execute_update(
+                lambda: get_system_db_conn(),
+                "UPDATE USERS SET ROLE = ? WHERE USER_ID = ?",
+                [new_role, user_id]
+            )
         return redirect(url_for('admin.manage_users'))
 
     # ── Server-side pagination + search (Task 3) ──────────────────────────
@@ -348,6 +358,7 @@ def system_settings():
         config['search_mode'] = request.form.get('search_mode', 'cache')
         config['search_blacklist'] = request.form.get('search_blacklist', '').strip()
         config['show_wordcloud'] = request.form.get('show_wordcloud') == 'on'
+        config['footer_text'] = request.form.get('footer_text', '').strip()
         config['maintenance_mode'] = request.form.get('maintenance_mode') == 'on'
         
         # 讀取二階段操作安全密碼
@@ -380,72 +391,128 @@ def sync_fields_config_with_oracle_db():
     
     try:
         # 1. 讀取 Oracle 欄位配置庫的所有欄位
-        conn = get_oracle_fields_db_conn()
-        cursor = conn.cursor()
-        cursor.execute("SELECT DATA_TYPE, FIELD_NAME, FIELD_LABEL, ALLOW_SEARCH, ALLOW_BROWSE, SORT_ORDER FROM ORACLE_FIELD_MAP")
-        db_rows = cursor.fetchall()
-        conn.close()
-        
-        db_fields = { (r['DATA_TYPE'], r['FIELD_NAME']): r for r in db_rows }
-    except Exception as db_err:
-        current_app.logger.error(f"連動同步 - 讀取 oracle_fields.db 失敗: {db_err}")
-        return
-        
-    # 2. 讀取目前的 fields_config.json
-    fields_config = []
-    if os.path.exists(Config.FIELDS_CONFIG_PATH):
         try:
-            with open(Config.FIELDS_CONFIG_PATH, 'r', encoding='utf-8') as f:
-                fields_config = json.load(f)
-        except Exception as json_err:
-            current_app.logger.error(f"連動同步 - 讀取 fields_config.json 失敗: {json_err}")
+            conn = get_oracle_fields_db_conn()
+            cursor = conn.cursor()
+            cursor.execute("SELECT DATA_TYPE, FIELD_NAME, FIELD_LABEL, ALLOW_SEARCH, ALLOW_BROWSE, SORT_ORDER FROM ORACLE_FIELD_MAP")
+            db_rows = cursor.fetchall()
+            conn.close()
             
-    # 轉為 key 對照
-    json_fields = { (item['DATA_TYPE'], item['FIELD_NAME']): item for item in fields_config }
-    
-    # 3. 雙向比對自癒
-    new_fields_config = []
-    
-    # 遍歷資料庫中有的欄位
-    for (dt, fn), db_row in db_fields.items():
-        if (dt, fn) in json_fields:
-            # 兩邊都有：保留原有的 SHOW_IN_LIST 與 SHOW_IN_DETAIL 配置，但更新標籤與排序，並自癒補充進階搜尋與主題館控制開關
-            json_item = json_fields[(dt, fn)]
-            json_item['FIELD_LABEL'] = db_row['FIELD_LABEL']
-            json_item['SORT_ORDER'] = db_row['SORT_ORDER'] or 99
-            if 'ALLOW_ADVANCED' not in json_item:
-                json_item['ALLOW_ADVANCED'] = 'Y'
-            if 'ALLOW_THEME' not in json_item:
-                json_item['ALLOW_THEME'] = 'Y'
-            new_fields_config.append(json_item)
-        else:
-            # 資料庫有，JSON 沒有：新增至 JSON，預設值與資料庫對齊
-            new_item = {
-                "CONFIG_ID": "",  # 後續統一重編
-                "DATA_TYPE": dt,
-                "FIELD_NAME": fn,
-                "FIELD_LABEL": db_row['FIELD_LABEL'],
-                "SHOW_IN_LIST": "Y" if db_row['ALLOW_BROWSE'] == 1 else "N",
-                "SHOW_IN_DETAIL": "Y" if db_row['ALLOW_SEARCH'] == 1 else "N",
-                "ALLOW_ADVANCED": "Y",
-                "ALLOW_THEME": "Y",
-                "SORT_ORDER": db_row['SORT_ORDER'] or 99
-            }
-            new_fields_config.append(new_item)
+            db_fields = { (r['DATA_TYPE'], r['FIELD_NAME']): r for r in db_rows }
+        except Exception as db_err:
+            try:
+                current_app.logger.error(f"連動同步 - 讀取 oracle_fields.db 失敗: {db_err}")
+            except:
+                print(f"連動同步 - 讀取 oracle_fields.db 失敗: {db_err}")
+            return
             
-    # 4. 排序並重編 CONFIG_ID
-    new_fields_config.sort(key=lambda x: (x['DATA_TYPE'], int(x.get('SORT_ORDER', 99)), x['FIELD_NAME']))
-    
-    for idx, item in enumerate(new_fields_config):
-        item['CONFIG_ID'] = str(idx + 1)
+        # 2. 讀取目前的 fields_config.json
+        fields_config = []
+        if os.path.exists(Config.FIELDS_CONFIG_PATH):
+            try:
+                with open(Config.FIELDS_CONFIG_PATH, 'r', encoding='utf-8') as f:
+                    fields_config = json.load(f)
+            except Exception as json_err:
+                try:
+                    current_app.logger.error(f"連動同步 - 讀取 fields_config.json 失敗: {json_err}")
+                except:
+                    print(f"連動同步 - 讀取 fields_config.json 失敗: {json_err}")
+                
+        # 轉為 key 對照
+        json_fields = { (item['DATA_TYPE'], item['FIELD_NAME']): item for item in fields_config }
         
-    # 5. 安全回寫 JSON
-    try:
-        with open(Config.FIELDS_CONFIG_PATH, 'w', encoding='utf-8') as f:
-            json.dump(new_fields_config, f, ensure_ascii=False, indent=2)
-        current_app.logger.info("動態雙向欄位自癒連動成功！fields_config.json 已對齊最新 Oracle 欄位配置。")
-    except Exception as write_err:
-        current_app.logger.error(f"連動同步 - 寫入 fields_config.json 失敗: {write_err}")
+        # 3. 雙向比對自癒
+        new_fields_config = []
+        db_updates = []
+        
+        # 遍歷資料庫中有的欄位
+        for (dt, fn), db_row in db_fields.items():
+            if (dt, fn) in json_fields:
+                # 兩邊都有：保留原有的 SHOW_IN_LIST, SHOW_IN_DETAIL, FIELD_LABEL 與 SORT_ORDER，不被資料庫覆蓋，並自癒補充缺失屬性
+                json_item = json_fields[(dt, fn)]
+                if not json_item.get('FIELD_LABEL'):
+                    json_item['FIELD_LABEL'] = db_row['FIELD_LABEL']
+                if json_item.get('SORT_ORDER') is None:
+                    json_item['SORT_ORDER'] = db_row['SORT_ORDER'] or 99
+                    
+                # 反向同步：若 JSON 內有 label/sort 且與 db 不一致，收集起來更新回資料庫
+                json_label = json_item.get('FIELD_LABEL', '').strip()
+                json_sort = json_item.get('SORT_ORDER')
+                
+                # 修正：sqlite3.Row 不支持 .get()，改以 dict 鍵值讀取
+                db_label = (db_row['FIELD_LABEL'] or '').strip()
+                db_sort = db_row['SORT_ORDER']
+                
+                if (json_label and json_label != db_label) or (json_sort is not None and json_sort != db_sort):
+                    db_updates.append((json_label, json_sort or 99, dt, fn))
+                    
+                if 'ALLOW_ADVANCED' not in json_item:
+                    json_item['ALLOW_ADVANCED'] = 'Y'
+                if 'ALLOW_THEME' not in json_item:
+                    json_item['ALLOW_THEME'] = 'Y'
+                new_fields_config.append(json_item)
+            else:
+                # 資料庫有，JSON 沒有：新增至 JSON，預設值與資料庫對齊
+                new_item = {
+                    "CONFIG_ID": "",  # 後續統一重編
+                    "DATA_TYPE": dt,
+                    "FIELD_NAME": fn,
+                    "FIELD_LABEL": db_row['FIELD_LABEL'],
+                    "SHOW_IN_LIST": "Y" if db_row['ALLOW_BROWSE'] == 1 else "N",
+                    "SHOW_IN_DETAIL": "Y" if db_row['ALLOW_SEARCH'] == 1 else "N",
+                    "ALLOW_ADVANCED": "Y",
+                    "ALLOW_THEME": "Y",
+                    "SORT_ORDER": db_row['SORT_ORDER'] or 99
+                }
+                new_fields_config.append(new_item)
+                
+        # 4. 排序並重編 CONFIG_ID
+        new_fields_config.sort(key=lambda x: (x['DATA_TYPE'], int(x.get('SORT_ORDER', 99)), x['FIELD_NAME']))
+        
+        for idx, item in enumerate(new_fields_config):
+            item['CONFIG_ID'] = str(idx + 1)
+            
+        # 5. 安全回寫 JSON
+        try:
+            with open(Config.FIELDS_CONFIG_PATH, 'w', encoding='utf-8') as f:
+                json.dump(new_fields_config, f, ensure_ascii=False, indent=2)
+            try:
+                current_app.logger.info("動態雙向欄位自癒連動成功！fields_config.json 已對齊最新 Oracle 欄位配置。")
+            except:
+                print("動態雙向欄位自癒連動成功！fields_config.json 已對齊最新 Oracle 欄位配置。")
+        except Exception as write_err:
+            try:
+                current_app.logger.error(f"連動同步 - 寫入 fields_config.json 失敗: {write_err}")
+            except:
+                print(f"連動同步 - 寫入 fields_config.json 失敗: {write_err}")
+            
+        # 6. 將前台自訂標籤與排序反向同步回資料庫
+        if db_updates:
+            try:
+                conn = get_oracle_fields_db_conn()
+                cursor = conn.cursor()
+                cursor.executemany("""
+                    UPDATE ORACLE_FIELD_MAP 
+                    SET FIELD_LABEL = ?, SORT_ORDER = ? 
+                    WHERE DATA_TYPE = ? AND FIELD_NAME = ?
+                """, db_updates)
+                conn.commit()
+                conn.close()
+                try:
+                    current_app.logger.info(f"反向同步自癒成功！已將 {len(db_updates)} 筆前台自訂標籤與排序同步寫入資料庫。")
+                except:
+                    print(f"反向同步自癒成功！已將 {len(db_updates)} 筆前台自訂標籤與排序同步寫入資料庫。")
+            except Exception as db_update_err:
+                try:
+                    current_app.logger.error(f"反向同步自癒至資料庫失敗: {db_update_err}")
+                except:
+                    print(f"反向同步自癒至資料庫失敗: {db_update_err}")
+    except Exception as e:
+        try:
+            current_app.logger.error(f"sync_fields_config_with_oracle_db 發生未預期錯誤: {e}")
+        except:
+            print(f"sync_fields_config_with_oracle_db 發生未預期錯誤: {e}")
+
 
 @bp.route('/oracle_fields', methods=['GET', 'POST'])
 @admin_required
@@ -723,3 +790,160 @@ def download_logs():
         doc_stats=enriched_doc_stats,
         logs=enriched_logs
     )
+
+
+# ===========================================================================
+# 最新消息 CRUD 路由
+# ===========================================================================
+
+@bp.route('/news/add', methods=['POST'])
+@admin_required
+def add_news():
+    """新增一則最新消息至 portal_config.json。"""
+    from app.config_manager import PortalConfigManager
+    import time
+    title = request.form.get('news_title', '').strip()
+    content = request.form.get('news_content', '').strip()
+    sort_order_val = request.form.get('sort_order', '9999').strip()
+    if not title or not content:
+        return redirect(url_for('admin.system_settings', msg='news_err'))
+    try:
+        sort_order = int(sort_order_val)
+    except ValueError:
+        sort_order = 9999
+    config = PortalConfigManager.load()
+    news_list = config.get('news', [])
+    # 計算下一個 ID（取最大 ID + 1）
+    next_id = max((n.get('id', 0) for n in news_list), default=0) + 1
+    news_list.append({
+        'id': next_id, 
+        'title': title, 
+        'content': content, 
+        'sort_order': sort_order,
+        'updated_at': time.time()
+    })
+    config['news'] = news_list
+    PortalConfigManager.save(config)
+    log_audit('Admin_News_Add', session['user_id'], request.remote_addr, str(next_id), f"新增最新消息：{title}")
+    return redirect(url_for('admin.system_settings', msg='succ'))
+
+
+@bp.route('/news/edit/<int:news_id>', methods=['POST'])
+@admin_required
+def edit_news(news_id):
+    """編輯一則最新消息。"""
+    from app.config_manager import PortalConfigManager
+    import time
+    title = request.form.get('news_title', '').strip()
+    content = request.form.get('news_content', '').strip()
+    sort_order_val = request.form.get('sort_order', '9999').strip()
+    if not title or not content:
+        return redirect(url_for('admin.system_settings', msg='news_err'))
+    try:
+        sort_order = int(sort_order_val)
+    except ValueError:
+        sort_order = 9999
+    config = PortalConfigManager.load()
+    news_list = config.get('news', [])
+    for n in news_list:
+        if n.get('id') == news_id:
+            n['title'] = title
+            n['content'] = content
+            n['sort_order'] = sort_order
+            n['updated_at'] = time.time()
+            break
+    config['news'] = news_list
+    PortalConfigManager.save(config)
+    log_audit('Admin_News_Edit', session['user_id'], request.remote_addr, str(news_id), f"編輯最新消息：{title}")
+    return redirect(url_for('admin.system_settings', msg='succ'))
+
+
+@bp.route('/news/delete/<int:news_id>', methods=['POST'])
+@admin_required
+def delete_news(news_id):
+    """依 ID 刪除一則最新消息。"""
+    from app.config_manager import PortalConfigManager
+    config = PortalConfigManager.load()
+    news_list = config.get('news', [])
+    config['news'] = [n for n in news_list if n.get('id') != news_id]
+    PortalConfigManager.save(config)
+    log_audit('Admin_News_Del', session['user_id'], request.remote_addr, str(news_id), f"刪除最新消息 ID={news_id}")
+    return redirect(url_for('admin.system_settings', msg='succ'))
+
+
+# ===========================================================================
+# 範本下載 CRUD 路由
+# ===========================================================================
+
+@bp.route('/templates/add', methods=['POST'])
+@admin_required
+def add_template():
+    """新增一個範本至 portal_config.json。"""
+    from app.config_manager import PortalConfigManager
+    import time
+    filename = request.form.get('tpl_filename', '').strip()
+    url_val = request.form.get('tpl_url', '').strip()
+    sort_order_val = request.form.get('sort_order', '9999').strip()
+    if not filename or not url_val:
+        return redirect(url_for('admin.system_settings', msg='tpl_err'))
+    try:
+        sort_order = int(sort_order_val)
+    except ValueError:
+        sort_order = 9999
+    config = PortalConfigManager.load()
+    tpl_list = config.get('templates', [])
+    next_id = max((t.get('id', 0) for t in tpl_list), default=0) + 1
+    tpl_list.append({
+        'id': next_id, 
+        'filename': filename, 
+        'url': url_val, 
+        'sort_order': sort_order,
+        'updated_at': time.time()
+    })
+    config['templates'] = tpl_list
+    PortalConfigManager.save(config)
+    log_audit('Admin_Tpl_Add', session['user_id'], request.remote_addr, str(next_id), f"新增範本：{filename}")
+    return redirect(url_for('admin.system_settings', msg='succ'))
+
+
+@bp.route('/templates/edit/<int:tpl_id>', methods=['POST'])
+@admin_required
+def edit_template(tpl_id):
+    """編輯一個範本。"""
+    from app.config_manager import PortalConfigManager
+    import time
+    filename = request.form.get('tpl_filename', '').strip()
+    url_val = request.form.get('tpl_url', '').strip()
+    sort_order_val = request.form.get('sort_order', '9999').strip()
+    if not filename or not url_val:
+        return redirect(url_for('admin.system_settings', msg='tpl_err'))
+    try:
+        sort_order = int(sort_order_val)
+    except ValueError:
+        sort_order = 9999
+    config = PortalConfigManager.load()
+    tpl_list = config.get('templates', [])
+    for t in tpl_list:
+        if t.get('id') == tpl_id:
+            t['filename'] = filename
+            t['url'] = url_val
+            t['sort_order'] = sort_order
+            t['updated_at'] = time.time()
+            break
+    config['templates'] = tpl_list
+    PortalConfigManager.save(config)
+    log_audit('Admin_Tpl_Edit', session['user_id'], request.remote_addr, str(tpl_id), f"編輯範本：{filename}")
+    return redirect(url_for('admin.system_settings', msg='succ'))
+
+
+@bp.route('/templates/delete/<int:tpl_id>', methods=['POST'])
+@admin_required
+def delete_template(tpl_id):
+    """依 ID 刪除一個範本。"""
+    from app.config_manager import PortalConfigManager
+    config = PortalConfigManager.load()
+    tpl_list = config.get('templates', [])
+    config['templates'] = [t for t in tpl_list if t.get('id') != tpl_id]
+    PortalConfigManager.save(config)
+    log_audit('Admin_Tpl_Del', session['user_id'], request.remote_addr, str(tpl_id), f"刪除範本 ID={tpl_id}")
+    return redirect(url_for('admin.system_settings', msg='succ'))

@@ -2,8 +2,8 @@
 
 {% block content %}
 <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 850px; margin: 0 auto;">
-    <h2 style="color: var(--primary-color); margin-bottom: 0.5rem;"><i class="bi bi-funnel"></i> 進階邏輯搜尋</h2>
-    <p style="color: #64748b; margin-bottom: 1.5rem;">請建立多重屬性組合條件（最多 5 組），並選擇欲搜尋的資料類型。</p>
+    <h2 style="color: var(--primary-color); margin-bottom: 0.5rem;"><i class="bi bi-funnel"></i> 進階邏輯查詢</h2>
+    <p style="color: #64748b; margin-bottom: 1.5rem;">請建立多重屬性組合條件（最多 5 組），並選擇欲查詢的資料類型。</p>
 
     <form action="{{ url_for('search.results_view') }}" method="POST" id="advSearchForm">
 
@@ -31,7 +31,7 @@
                 <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="saveSearch()">儲存此查詢</button>
                 <button type="button" class="btn btn-sm btn-outline-info ms-2" onclick="loadSavedSearches()">載入儲存的查詢</button>
             </div>
-            <button type="submit" class="btn" style="background-color: var(--primary-color); padding: 0.5rem 2rem;">執行搜尋</button>
+            <button type="submit" class="btn" style="background-color: var(--primary-color); padding: 0.5rem 2rem;">執行查詢</button>
         </div>
     </form>
 </div>
@@ -117,7 +117,8 @@
         // Remove btn
         const rmBtn = document.createElement('button');
         rmBtn.type = 'button';
-        rmBtn.textContent = '';
+        rmBtn.innerHTML = '<i class="bi bi-x-lg" style="font-size: 1rem; font-weight: bold;"></i>';
+        rmBtn.title = '刪除此條件';
         rmBtn.style.background = 'none';
         rmBtn.style.border = 'none';
         rmBtn.style.color = '#ef4444';
@@ -182,7 +183,7 @@
             li.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <a href="javascript:void(0)" onclick='applySearch(${JSON.stringify(item.conditions).replace(/'/g, "&#39;")})'>${item.name}</a>
-                    <button class="btn btn-sm btn-danger" onclick="deleteSearch(${item.id})"></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteSearch(${item.id})" title="刪除此紀錄"><i class="bi bi-trash"></i></button>
                 </div>
                 <small style="color:#64748b;">${item.created_at}</small>
             `;

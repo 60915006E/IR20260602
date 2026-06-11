@@ -57,10 +57,10 @@
     </div>
     {% endif %}
 
-    <!-- 儲存的搜尋條件區塊 -->
+    <!-- 儲存的查詢條件區塊 -->
     <div style="margin-top: 2rem; margin-bottom: 2rem;">
         <h3 style="color: var(--primary-color); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 8px;">
-            <i class="bi bi-star-fill" style="color: #f59e0b;"></i> 已儲存的搜尋條件 (最多 10 筆)
+            <i class="bi bi-star-fill" style="color: #f59e0b;"></i> 已儲存的查詢條件 (最多 10 筆)
         </h3>
         
         {% if saved_searches %}
@@ -68,7 +68,7 @@
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-                        <th style="padding: 1rem; text-align: left; color: #475569;">搜尋名稱與條件</th>
+                        <th style="padding: 1rem; text-align: left; color: #475569;">查詢名稱與條件</th>
                         <th style="padding: 1rem; text-align: left; color: #475569; width: 180px;">儲存時間</th>
                         <th style="padding: 1rem; text-align: center; color: #475569; width: 180px;">操作</th>
                     </tr>
@@ -78,7 +78,7 @@
                     <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
                         <td style="padding: 1rem;">
                             {% if ss.query.is_advanced %}
-                                <!-- 進階搜尋跳轉：使用 POST 表單模擬 AJAX -->
+                                <!-- 進階查詢跳轉：使用 POST 表單模擬 AJAX -->
                                 <form action="{{ url_for('search.results_view') }}" method="POST" id="form_ss_{{ ss.id }}" style="display:inline;">
                                     {% for f in ss.query.conditions.fields %}
                                         <input type="hidden" name="field[]" value="{{ f }}">
@@ -99,7 +99,7 @@
                                     </a>
                                 </form>
                             {% else %}
-                                <!-- 一般關鍵字搜尋跳轉 -->
+                                <!-- 一般關鍵字查詢跳轉 -->
                                 <a href="javascript:void(0)" onclick="runSavedSearch({{ ss.query | tojson | safe }})" style="text-decoration: none; color: var(--primary-color); font-weight: 600;">
                                     <i class="bi bi-search"></i> {{ ss.name }}
                                 </a>
@@ -109,7 +109,7 @@
                             {{ ss.created_at }}
                         </td>
                         <td style="padding: 1rem; text-align: center;">
-                            <form action="{{ url_for('search.delete_saved_search', sid=ss.id) }}" method="POST" onsubmit="return confirm('確定要刪除此搜尋條件嗎？');" style="display: inline;">
+                            <form action="{{ url_for('search.delete_saved_search', sid=ss.id) }}" method="POST" onsubmit="return confirm('確定要刪除此查詢條件嗎？');" style="display: inline;">
                                 <button type="submit" class="btn btn-sm" style="background-color: #fee2e2; color: #dc2626; border: 1px solid #fecaca; border-radius: 4px; padding: 4px 10px;">刪除</button>
                             </form>
                         </td>
@@ -121,7 +121,7 @@
         {% else %}
         <div style="text-align: center; padding: 3rem 2rem; background: white; border-radius: 12px; border: 2px dashed #e2e8f0;">
             <i class="bi bi-star" style="font-size: 2.5rem; color: #cbd5e1;"></i>
-            <h3 style="color: #64748b; margin-top: 1rem; font-size: 1.1rem;">目前無已儲存的搜尋條件</h3>
+            <h3 style="color: #64748b; margin-top: 1rem; font-size: 1.1rem;">目前無已儲存的查詢條件</h3>
             <p style="color: #94a3b8; font-size: 0.85rem;">在檢索結果頁面中，點擊「儲存此查詢」即可在此處快速存取。</p>
         </div>
         {% endif %}

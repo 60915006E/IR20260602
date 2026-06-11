@@ -44,7 +44,23 @@ class PortalConfigManager:
             return cls.init_default()
         try:
             with open(cls.CONFIG_PATH, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                config = json.load(f)
+            
+            # 對最新消息排序：優先依 sort_order 升序，次依 updated_at 降序，再依 id 降序
+            if 'news' in config and isinstance(config['news'], list):
+                config['news'].sort(key=lambda x: (
+                    int(x.get('sort_order')) if x.get('sort_order') is not None else 9999,
+                    -float(x.get('updated_at')) if x.get('updated_at') is not None else -int(x.get('id', 0))
+                ))
+                
+            # 對範本下載排序：優先依 sort_order 升序，次依 updated_at 降序，再依 id 降序
+            if 'templates' in config and isinstance(config['templates'], list):
+                config['templates'].sort(key=lambda x: (
+                    int(x.get('sort_order')) if x.get('sort_order') is not None else 9999,
+                    -float(x.get('updated_at')) if x.get('updated_at') is not None else -int(x.get('id', 0))
+                ))
+                
+            return config
         except Exception as e:
             if current_app:
                 current_app.logger.error(f"Error loading portal config: {e}")

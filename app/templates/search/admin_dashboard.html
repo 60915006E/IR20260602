@@ -8,7 +8,7 @@
 <div class="card mb-4" style="background-color: #f8fafc; padding: 20px; border-radius: 5px; border-left: 4px solid #10b981; margin-bottom: 20px;">
     <h4 style="color: #0f172a;"><i class="bi bi-arrow-repeat"></i> 資料庫快取同步 (Sync Index)</h4>
     <p style="color: #475569; font-size: 0.9rem;">
-        系統改版後，主要搜尋已直連原始資料庫，此功能用於手動觸發 <code>sync_index.py</code> 排程，重建 GLOBAL_SEARCH_INDEX 快取備用索引。
+        系統改版後，主要查詢已直連原始資料庫，此功能用於手動觸發 <code>sync_index.py</code> 排程，重建 GLOBAL_SEARCH_INDEX 快取備用索引。
     </p>
     <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
         <button class="btn" style="background-color: #10b981; color: white;" id="syncBtn" onclick="triggerSync()">
@@ -74,12 +74,12 @@
         </div>
 
         <div style="background: #f8fafc; padding: 15px; border-radius: 5px; border: 1px solid #e2e8f0;">
-            <label class="fw-bold"><i class="bi bi-search"></i> 搜尋檢索模式</label>
+            <label class="fw-bold"><i class="bi bi-search"></i> 查詢檢索模式</label>
             <select id="cfg_search_mode" class="form-control mt-2">
                 <option value="cache" {% if portal_config.get('search_mode', 'cache') == 'cache' %}selected{% endif %}>獨立快取檢索 (預設)</option>
                 <option value="oracle_direct" {% if portal_config.get('search_mode') == 'oracle_direct' %}selected{% endif %}>直連 Oracle 19c</option>
             </select>
-            <small class="text-muted">預設使用 3 分鐘增量快取以提供極速搜尋，亦可切換為直連實時查詢。</small>
+            <small class="text-muted">預設使用 3 分鐘增量快取以提供極速查詢，亦可切換為直連實時查詢。</small>
         </div>
 
 
@@ -157,13 +157,13 @@
             <input type="text" id="cfg_add_book_url" class="form-control mt-2" value="{{ portal_config.add_book_url }}">
         </div>
 
-        <!-- Task02: 全站搜尋欄位顯示設定（重整版，包含所有被搜尋的欄位） -->
+        <!-- Task02: 全站查詢欄位顯示設定（重整版，包含所有被查詢的欄位） -->
         <div style="background: #f8fafc; padding: 15px; border-radius: 5px; border: 1px solid #e2e8f0; grid-column: span 2;">
             <label class="fw-bold mb-2">
                 <i class="bi bi-table"></i> 簡目(結果列表) / 詳目(內容頁) 全局欄位顯示設定
             </label>
             <p style="font-size: 0.85rem; color: #64748b; margin: 6px 0 10px;">
-                以下列出所有可能在搜尋中命中的欄位，管理者可設定各欄位是否在結果列表（簡目）或詳細頁面（詳目）中顯示給使用者。
+                以下列出所有可能在查詢中命中的欄位，管理者可設定各欄位是否在結果列表（簡目）或詳細頁面（詳目）中顯示給使用者。
             </p>
             <div style="max-height: 500px; overflow-y: auto; background: white; padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">

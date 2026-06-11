@@ -13,7 +13,7 @@
                 <option value="title_asc" {% if sort == 'title_asc' %}selected{% endif %}>標題字母序</option>
             </select>
             
-            <button type="submit" class="btn">重新搜尋</button>
+            <button type="submit" class="btn">重新查詢</button>
         </div>
         <div class="form-check form-check-inline">
             <input class="form-check-input" type="checkbox" name="data_types" id="opt_tech" value="技術報告" {% if not selected_types or '技術報告' in selected_types %}checked{% endif %}>
@@ -36,7 +36,7 @@
 
 <div class="results-header">
     <div>
-        <h2 style="font-size: 1.5rem;">搜尋結果</h2>
+        <h2 style="font-size: 1.5rem;">查詢結果</h2>
         <p style="color: #64748b; margin-top: 0.5rem;">
             關鍵字：<strong style="color: var(--primary-color);">{{ q or '無' }}</strong> ｜ 
             共找到 <strong>{{ total_items }}</strong> 筆資料
@@ -50,9 +50,9 @@
             {% endfor %}
             <button type="submit" class="btn btn-sm" style="background-color: #f59e0b; color: white;"><i class="bi bi-star"></i> 儲存此查詢</button>
         </form>
-        <a href="{{ url_for('search.export_data', q=q, format='excel') }}" class="btn btn-sm" style="background-color: #10b981; color: white;">匯出 Excel</a>
-        <a href="{{ url_for('search.export_data', q=q, format='csv') }}" class="btn btn-sm" style="background-color: #0ea5e9; color: white;">匯出 CSV</a>
-        <a href="{{ url_for('search.export_data', q=q, format='txt') }}" class="btn btn-sm" style="background-color: #64748b; color: white;">匯出 TXT</a>
+        <a href="{{ url_for('search.export_data', q=q, year=year, dept=dept, sort=sort, format='excel', **({'data_types': selected_types} if selected_types else {})) }}" class="btn btn-sm" style="background-color: #10b981; color: white;" data-no-overlay="true">匯出 Excel</a>
+        <a href="{{ url_for('search.export_data', q=q, year=year, dept=dept, sort=sort, format='csv', **({'data_types': selected_types} if selected_types else {})) }}" class="btn btn-sm" style="background-color: #0ea5e9; color: white;" data-no-overlay="true">匯出 CSV</a>
+        <a href="{{ url_for('search.export_data', q=q, year=year, dept=dept, sort=sort, format='txt', **({'data_types': selected_types} if selected_types else {})) }}" class="btn btn-sm" style="background-color: #64748b; color: white;" data-no-overlay="true">匯出 TXT</a>
     </div>
 </div>
 
@@ -64,6 +64,7 @@
     <div class="list-item type-{{ item.DATA_TYPE }}" style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid var(--primary-color);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
             <div>
+                <span style="background-color: #64748b; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-right: 8px;">{{ loop.index + (page - 1) * items_per_page }}</span>
                 <span class="card-type" style="margin-right: 10px;">{{ item.DATA_TYPE }}</span>
                 {% set pkeys = {'技術報告': 'OVC_RP_NO', '史政': 'OVC_HS_NO', '史政照片': 'OVC_TO_NO', '逸光報': 'OVC_PAPER_ID'} %}
                 {% set pk_field = pkeys.get(item.DATA_TYPE) %}
@@ -202,7 +203,7 @@
 {% else %}
 <div style="text-align: center; padding: 4rem; background: var(--card-bg); border-radius: 12px; margin-top: 2rem;">
     <h3 style="color: #64748b; margin-bottom: 1rem;">找不到符合條件的資料</h3>
-    <p>請嘗試輸入其他關鍵字（例如部分名稱或編號），或調整您的搜尋範圍。</p>
+    <p>請嘗試輸入其他關鍵字（例如部分名稱或編號），或調整您的查詢範圍。</p>
     <a href="/" class="btn" style="background-color: #3b82f6; color: white; margin-top: 1rem; text-decoration: none;">重新檢索</a>
 </div>
 {% endif %}

@@ -2,7 +2,7 @@
 {% block content %}
 <div style="max-width: 800px; margin: 0 auto; background: var(--card-bg); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
     <h2 style="margin-bottom: 1.5rem; color: var(--primary-color);">進階關鍵字查詢</h2>
-    <p style="color: #64748b; margin-bottom: 2rem;">您可在此處針對特定欄位進行縮小範圍的過濾搜尋，目前由於關鍵字查詢整合，所有實體欄位檢索轉換為字詞聯集比對。</p>
+    <p style="color: #64748b; margin-bottom: 2rem;">您可在此處針對特定欄位進行縮小範圍的過濾查詢，目前由於關鍵字查詢整合，所有實體欄位檢索轉換為字詞聯集比對。</p>
     
     <form action="{{ url_for('search.do_search') }}" method="GET">
         <div class="form-group">

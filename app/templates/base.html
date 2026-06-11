@@ -1,55 +1,69 @@
 <!DOCTYPE html>
 <html lang="zh-Hant-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}機構典藏系統{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-icons/font/bootstrap-icons.css') }}">
     {% if (session.get('role') or '')|lower == 'admin' %}
     <script>
-    /* 立即讀取 localStorage 狀態，防止亮白屏閃爍 */
-    (function () {
-        var isDark = localStorage.getItem('admin_dark_mode') === 'true';
-        if (isDark) {
-            document.documentElement.classList.add('admin-dark-mode');
-            document.addEventListener('DOMContentLoaded', function() {
-                document.body.classList.add('admin-dark-mode');
-            });
-        }
-    })();
+        /* 立即讀取 localStorage 狀態，防止亮白屏閃爍 */
+        (function () {
+            var isDark = localStorage.getItem('admin_dark_mode') === 'true';
+            if (isDark) {
+                document.documentElement.classList.add('admin-dark-mode');
+                document.addEventListener('DOMContentLoaded', function () {
+                    document.body.classList.add('admin-dark-mode');
+                });
+            }
+        })();
     </script>
     {% endif %}
 </head>
+
 <body class="theme-{{ portal_config.system_theme or 'light' }}">
 
     {# ── Task 5: 全螢幕等待 Overlay（隱藏預設） ── #}
-    <div id="loading-overlay" role="status" aria-label="搜尋處理中">
+    <div id="loading-overlay" role="status" aria-label="查詢處理中">
         <div class="loading-spinner"></div>
-        <p class="loading-text">搜尋中，請耐心等候...</p>
+        <p class="loading-text">查詢中，請耐心等候...</p>
     </div>
 
-    <header>
-        <a href="{{ url_for('search.index') }}" class="logo" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+    <header style="position: relative; overflow: visible;">
+        <!-- 導覽列背景圖 (放大 20%、不透明度設為 75%、下移) -->
+        <div
+            style="position: absolute; right: -20px; bottom: -10px; width: 336px; height: 115px; background-image: url('{{ url_for('static', filename='img/background-1.jpg') }}'); background-size: cover; background-position: right bottom; opacity: 0.75; z-index: 0; pointer-events: none;">
+        </div>
+
+        <a href="{{ url_for('search.index') }}" class="logo"
+            style="display: flex; align-items: center; gap: 10px; text-decoration: none; position: relative; z-index: 1;">
             <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" style="height: 40px; width: auto;">
             <span>機構典藏系統</span>
         </a>
-        <div class="nav-links">
+        <div class="nav-links" style="position: relative; z-index: 1;">
             <a href="{{ url_for('search.index') }}">首頁</a>
-            <a href="{{ portal_config.add_book_url }}" target="_blank" style="color: #2563eb; font-weight: bold;"><i class="bi bi-journal-plus"></i> 新增書目</a>
+            <a href="{{ portal_config.add_book_url }}" target="_blank" style="color: #2563eb; font-weight: bold;"><i
+                    class="bi bi-journal-plus"></i> 新增書目</a>
             <a href="{{ url_for('search.advanced_search') }}">進階查詢</a>
             <a href="{{ url_for('search.browse') }}">分類瀏覽</a>
             {% if session.get('user_id') %}
-            <a href="{{ url_for('search.my_library') }}" style="color: #d97706; font-weight: bold;"><i class="bi bi-book-half"></i> 我的書房</a>
+            <a href="{{ url_for('search.my_library') }}" style="color: #d97706; font-weight: bold;"><i
+                    class="bi bi-book-half"></i> 我的書房</a>
             {% endif %}
             {% if (session.get('role') or '')|lower == 'admin' %}
-            <a href="{{ url_for('admin.field_settings') }}" style="color: #ef4444; font-weight: bold;"><i class="bi bi-shield-lock"></i> 管理介面</a>
+            <a href="{{ url_for('admin.field_settings') }}" style="color: #ef4444; font-weight: bold;"><i
+                    class="bi bi-shield-lock"></i> 管理介面</a>
             {% endif %}
             {% if (session.get('role') or '')|lower in ['admin', 'topicadmin'] %}
-            <a href="{{ url_for('search.theme_admin') }}" style="color: #10b981; font-weight: bold;"><i class="bi bi-pencil-square"></i> 主題館修改</a>
+            <a href="{{ url_for('search.theme_admin') }}" style="color: #10b981; font-weight: bold;"><i
+                    class="bi bi-pencil-square"></i> 主題特藏館修改</a>
             {% endif %}
             {% if session.get('user_id') %}
             <span style="color: #94a3b8; font-size: 0.85rem; margin-left: 12px; margin-right: 2px;">目前使用者：</span>
-            <span style="color: #94a3b8; font-weight: bold; margin-right: 12px;"><i class="bi bi-person-circle"></i> {{ session.get('username', session.get('user_id')) }}</span>
+            <span style="color: #94a3b8; font-weight: bold; margin-right: 12px;"><i class="bi bi-person-circle"></i> {{
+                session.get('username', session.get('user_id')) }}</span>
             <a href="{{ url_for('auth.logout') }}" style="color: #64748b;">登出</a>
             {% endif %}
         </div>
@@ -58,18 +72,19 @@
     <main class="container">
         {# Flash messages #}
         {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            <div style="margin-bottom: 1rem;">
-                {% for category, message in messages %}
-                <div style="padding: 0.8rem 1.2rem; border-radius: 8px; margin-bottom: 0.5rem;
+        {% if messages %}
+        <div style="margin-bottom: 1rem;">
+            {% for category, message in messages %}
+            <div
+                style="padding: 0.8rem 1.2rem; border-radius: 8px; margin-bottom: 0.5rem;
                      background: {% if category == 'warning' %}#fef3c7{% elif category == 'error' or category == 'danger' %}#fee2e2{% else %}#dcfce7{% endif %};
                      color: {% if category == 'warning' %}#92400e{% elif category == 'error' or category == 'danger' %}#991b1b{% else %}#166534{% endif %};
                      border: 1px solid {% if category == 'warning' %}#fcd34d{% elif category == 'error' or category == 'danger' %}#fca5a5{% else %}#86efac{% endif %};">
-                    {{ message }}
-                </div>
-                {% endfor %}
+                {{ message }}
             </div>
-            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
         {% endwith %}
 
         {% block content %}{% endblock %}
@@ -77,92 +92,92 @@
 
     {# ── Task 5: Loading Overlay JS – attach to ALL search forms ── #}
     <script>
-    (function () {
-        'use strict';
-        var overlay = document.getElementById('loading-overlay');
+        (function () {
+            'use strict';
+            var overlay = document.getElementById('loading-overlay');
 
-        function showOverlay(form) {
-            // Disable all submit buttons in the form to prevent double-click
-            var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
-            buttons.forEach(function (btn) {
-                btn.disabled = true;
-                if (btn.tagName === 'BUTTON') {
-                    btn.dataset.originalText = btn.innerHTML;
-                    btn.innerHTML = '搜尋中...';
-                }
-            });
-            overlay.classList.add('is-active');
-        }
-
-        // Selectors that identify search forms across all pages
-        var SEARCH_FORM_SELECTORS = [
-            'form[action*="/search"]',
-            'form[action*="/advanced"]',
-            'form[action*="/browse"]',
-            'form#search-form',
-            '.search-container form',
-        ];
-
-        function attachToForms() {
-            document.querySelectorAll('.search-form').forEach(function (form) {
-                form.addEventListener('submit', function (e) {
-                    // Skip export / admin forms (they trigger file download, no page nav)
-                    if (form.dataset.noOverlay === 'true') return;
-                    showOverlay(form);
-                });
-            });
-        }
-
-        // Run after DOM ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', attachToForms);
-        } else {
-            attachToForms();
-        }
-
-        // Also hide the overlay when the browser's back/forward cache restores the page
-        window.addEventListener('pageshow', function (ev) {
-            if (ev.persisted) {
-                overlay.classList.remove('is-active');
-                document.querySelectorAll('button[type="submit"]').forEach(function (btn) {
-                    btn.disabled = false;
-                    if (btn.dataset.originalText) {
-                        btn.innerHTML = btn.dataset.originalText;
+            function showOverlay(form) {
+                // Disable all submit buttons in the form to prevent double-click
+                var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+                buttons.forEach(function (btn) {
+                    btn.disabled = true;
+                    if (btn.tagName === 'BUTTON') {
+                        btn.dataset.originalText = btn.innerHTML;
+                        btn.innerHTML = '查詢中...';
                     }
                 });
+                overlay.classList.add('is-active');
             }
-        });
-    })();
+
+            // Selectors that identify search forms across all pages
+            var SEARCH_FORM_SELECTORS = [
+                'form[action*="/search"]',
+                'form[action*="/advanced"]',
+                'form[action*="/browse"]',
+                'form#search-form',
+                '.search-container form',
+            ];
+
+            function attachToForms() {
+                document.querySelectorAll('.search-form').forEach(function (form) {
+                    form.addEventListener('submit', function (e) {
+                        // Skip export / admin forms (they trigger file download, no page nav)
+                        if (form.dataset.noOverlay === 'true') return;
+                        showOverlay(form);
+                    });
+                });
+            }
+
+            // Run after DOM ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', attachToForms);
+            } else {
+                attachToForms();
+            }
+
+            // Also hide the overlay when the browser's back/forward cache restores the page
+            window.addEventListener('pageshow', function (ev) {
+                if (ev.persisted) {
+                    overlay.classList.remove('is-active');
+                    document.querySelectorAll('button[type="submit"]').forEach(function (btn) {
+                        btn.disabled = false;
+                        if (btn.dataset.originalText) {
+                            btn.innerHTML = btn.dataset.originalText;
+                        }
+                    });
+                }
+            });
+        })();
     </script>
 
     {% if (session.get('role') or '')|lower == 'admin' %}
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var btn = document.getElementById('adminDarkModeBtn');
-        if (btn) {
-            // 設定初始文字
-            var isDark = localStorage.getItem('admin_dark_mode') === 'true';
-            btn.textContent = isDark ? '切換亮色模式' : '切換黑暗模式';
-            
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                var currentlyDark = document.body.classList.contains('admin-dark-mode');
-                if (currentlyDark) {
-                    document.body.classList.remove('admin-dark-mode');
-                    document.documentElement.classList.remove('admin-dark-mode');
-                    localStorage.setItem('admin_dark_mode', 'false');
-                    btn.textContent = '切換黑暗模式';
-                } else {
-                    document.body.classList.add('admin-dark-mode');
-                    document.documentElement.classList.add('admin-dark-mode');
-                    localStorage.setItem('admin_dark_mode', 'true');
-                    btn.textContent = '切換亮色模式';
-                }
-            });
-        }
-    });
+        document.addEventListener('DOMContentLoaded', function () {
+            var btn = document.getElementById('adminDarkModeBtn');
+            if (btn) {
+                // 設定初始文字
+                var isDark = localStorage.getItem('admin_dark_mode') === 'true';
+                btn.textContent = isDark ? '切換亮色模式' : '切換黑暗模式';
+
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    var currentlyDark = document.body.classList.contains('admin-dark-mode');
+                    if (currentlyDark) {
+                        document.body.classList.remove('admin-dark-mode');
+                        document.documentElement.classList.remove('admin-dark-mode');
+                        localStorage.setItem('admin_dark_mode', 'false');
+                        btn.textContent = '切換黑暗模式';
+                    } else {
+                        document.body.classList.add('admin-dark-mode');
+                        document.documentElement.classList.add('admin-dark-mode');
+                        localStorage.setItem('admin_dark_mode', 'true');
+                        btn.textContent = '切換亮色模式';
+                    }
+                });
+            }
+        });
     </script>
     {% endif %}
 </body>
-</html>
 
+</html>

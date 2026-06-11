@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}進階搜尋結果 - 機構典藏系統{% endblock %}
+{% block title %}進階查詢結果 - 機構典藏系統{% endblock %}
 
 {% block content %}
 <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 1000px; margin: 0 auto; margin-top:20px;">
     
     <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
-        <h2 style="color: var(--primary-color); margin: 0;"><i class="bi bi-search"></i> 進階搜尋結果</h2>
+        <h2 style="color: var(--primary-color); margin: 0;"><i class="bi bi-search"></i> 進階查詢結果</h2>
         <a href="{{ url_for('search.advanced_search') }}" class="btn btn-outline-secondary btn-sm">重新檢索</a>
     </div>
 
@@ -27,6 +27,7 @@
             <table class="table" style="width: 100%; border-collapse: collapse; margin-bottom: 0;">
                 <thead style="background: #f8fafc;">
                     <tr>
+                        <th style="padding: 12px 15px; border-bottom: 2px solid #e2e8f0; text-align: center; width: 60px;">項次</th>
                         <th style="padding: 12px 15px; border-bottom: 2px solid #e2e8f0;">資料類型</th>
                         <th style="padding: 12px 15px; border-bottom: 2px solid #e2e8f0;">系統唯一編號</th>
                         <th style="padding: 12px 15px; border-bottom: 2px solid #e2e8f0;">標題</th>
@@ -38,6 +39,7 @@
                 <tbody>
                     {% for row in records %}
                     <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 12px 15px; text-align: center; vertical-align: middle; font-weight: bold; color: #64748b;">{{ loop.index }}</td>
                         <td style="padding: 12px 15px; vertical-align: middle;">
                             <span class="card-type type-{{ row.get('DATA_TYPE') }}" style="padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; background: #e0f2fe; color: #0369a1;">
                                 {{ row.get('DATA_TYPE') }}

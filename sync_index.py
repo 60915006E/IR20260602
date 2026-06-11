@@ -67,7 +67,7 @@ def build_search_text(row, data_type, fields_config):
         }
     elif data_type == "史政照片":
         alias_map = {
-            'SYS_NO': 'OVC_RP_NO',
+            'SYS_NO': 'OVC_TO_NO',
             'TITLE': 'OVN_TO_NAME',
             'AUTHOR': 'OVN_TO_PEOPLE',
             'SUMMARY': 'OVN_TO_SUMMARY',
@@ -77,7 +77,7 @@ def build_search_text(row, data_type, fields_config):
         }
     elif data_type == "逸光報":
         alias_map = {
-            'SYS_NO': 'OVC_RP_NO',
+            'SYS_NO': 'OVC_PAPER_ID',
             'TITLE': 'OVN_FILE_NAME',
             'AUTHOR': 'NULL',
             'SUMMARY': 'OVN_FLD_DESC',
@@ -99,6 +99,12 @@ def build_search_text(row, data_type, fields_config):
         
         if original_field in searchable_fields or k_upper in searchable_fields:
             values.append(str(val))
+            
+    # 防禦性鐵律：強制將系統唯一號併入搜尋索引文字中，確保隨時可以透過系統號精準檢索！
+    sys_no = row.get('SYS_NO') or row.get('OVC_RP_NO') or row.get('OVC_HS_NO') or row.get('OVC_TO_NO') or row.get('OVC_PAPER_ID') or row.get('sys_no')
+    if sys_no and str(sys_no) not in values:
+        values.append(str(sys_no))
+        
     return " ".join(values)
 
 def init_cache_database(cache_conn):

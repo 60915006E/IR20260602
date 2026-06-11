@@ -360,8 +360,8 @@ def _build_one_type_block(data_type, prefix, keyword, advanced_filters, param_di
         # 主表直接欄位
         for field in main_fields:
             pk = f"kw_{param_counter[0]}"
-            param_dict[pk] = f"%{keyword}%"
-            kw_conditions.append(f"{field} LIKE :{pk}")
+            param_dict[pk] = f"%{keyword.upper()}%"
+            kw_conditions.append(f"UPPER({field}) LIKE :{pk}")
             param_counter[0] += 1
 
         # 一對多子表：EXISTS 子查詢 (若相關子欄位被允許)
@@ -373,8 +373,8 @@ def _build_one_type_block(data_type, prefix, keyword, advanced_filters, param_di
             if search_enabled and sub_field not in search_enabled:
                 continue
             pk = f"kw_{param_counter[0]}"
-            param_dict[pk] = f"%{keyword}%"
-            exists_sql = f"EXISTS (SELECT 1 FROM {sub_table} S WHERE S.OVC_RP_NO = M.OVC_RP_NO AND S.{sub_field} LIKE :{pk})"  # nosec B608
+            param_dict[pk] = f"%{keyword.upper()}%"
+            exists_sql = f"EXISTS (SELECT 1 FROM {sub_table} S WHERE S.OVC_RP_NO = M.OVC_RP_NO AND UPPER(S.{sub_field}) LIKE :{pk})"  # nosec B608
             kw_conditions.append(exists_sql)
             param_counter[0] += 1
 
@@ -401,8 +401,8 @@ def _build_one_type_block(data_type, prefix, keyword, advanced_filters, param_di
                 for field in cat_fields:
                     # 進階查詢與特定欄位檢索為用戶明確指定之精準條件，此處鬆綁限制以確保 100% 成功檢索
                     pk = f"adv_{param_counter[0]}"
-                    param_dict[pk] = f"%{val}%"
-                    field_conds.append(f"{field} LIKE :{pk}")
+                    param_dict[pk] = f"%{val.upper()}%"
+                    field_conds.append(f"UPPER({field}) LIKE :{pk}")
                     param_counter[0] += 1
 
             if not field_conds:
@@ -484,19 +484,28 @@ def build_search_sql(keyword, advanced_filters=None, data_types=None, sort_by='r
     # UNION ALL 合併所有資料類型的結果
     combined_sql = "\nUNION ALL\n".join(blocks)
 
-    # 根據 sort_by 決定外層排序語法 (同時完美相容 Oracle 19c 與 SQLite 雙資料庫語意)
-    if sort_by == 'date_desc':
-        # 日期新到舊 (將空日期排在最後)
-        order_by_str = "YEAR IS NULL ASC, YEAR DESC, SYS_NO DESC"
-    elif sort_by == 'date_asc':
-        # 日期舊到新
-        order_by_str = "YEAR IS NULL ASC, YEAR ASC, SYS_NO DESC"
-    elif sort_by == 'title_asc':
-        # 標題字母序
-        order_by_str = "TITLE ASC, SYS_NO DESC"
+    # 根據 sort_by 決定外層排序語法
+    db_mode = getattr(Config, 'DATA_DB_MODE', 'ORACLE')
+    if db_mode == 'SQLITE':
+        # SQLite 支援 IS NULL ASC 語法
+        if sort_by == 'date_desc':
+            order_by_str = "YEAR IS NULL ASC, YEAR DESC, SYS_NO DESC"
+        elif sort_by == 'date_asc':
+            order_by_str = "YEAR IS NULL ASC, YEAR ASC, SYS_NO DESC"
+        elif sort_by == 'title_asc':
+            order_by_str = "TITLE ASC, SYS_NO DESC"
+        else:
+            order_by_str = "DATA_TYPE, SYS_NO DESC"
     else:
-        # 相關度：預設資料類型分群排序
-        order_by_str = "DATA_TYPE, SYS_NO DESC"
+        # Oracle 不支援 IS NULL 直接用作排序表達式，改用 CASE WHEN
+        if sort_by == 'date_desc':
+            order_by_str = "CASE WHEN YEAR IS NULL THEN 1 ELSE 0 END ASC, YEAR DESC, SYS_NO DESC"
+        elif sort_by == 'date_asc':
+            order_by_str = "CASE WHEN YEAR IS NULL THEN 1 ELSE 0 END ASC, YEAR ASC, SYS_NO DESC"
+        elif sort_by == 'title_asc':
+            order_by_str = "TITLE ASC, SYS_NO DESC"
+        else:
+            order_by_str = "DATA_TYPE, SYS_NO DESC"
 
     # 包裝成外層 SELECT 以便後續分頁與排序
     final_sql = f"SELECT * FROM ({combined_sql}) COMBINED_RESULT ORDER BY {order_by_str}"  # nosec B608

@@ -18,16 +18,16 @@
     <h2 style="color: var(--primary-color); margin-bottom: 0.5rem;">帳號管理介面</h2>
     <hr style="margin-bottom: 1.5rem; border-color: var(--border-color);">
 
-    {# ── Task 3: 搜尋 + 分頁資訊列 ── #}
+    {# ── Task 3: 查詢 + 分頁資訊列 ── #}
     <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap;">
         <form action="{{ url_for('admin.manage_users') }}" method="GET"
               style="display: flex; gap: 8px; flex: 1;" data-no-overlay="true">
             <input type="text" name="q" id="user-search-input"
                    value="{{ q_search }}"
-                   placeholder="搜尋帳號 ID 或使用者名稱..."
+                   placeholder="查詢帳號 ID 或使用者名稱..."
                    class="search-input"
                    style="flex: 1; min-width: 200px; font-size: 0.95rem; padding: 0.6rem 1rem; border-radius: 8px;">
-            <button type="submit" class="btn" style="padding: 0.6rem 1.5rem; border-radius: 8px;">搜尋</button>
+            <button type="submit" class="btn" style="padding: 0.6rem 1.5rem; border-radius: 8px;">查詢</button>
             {% if q_search %}
             <a href="{{ url_for('admin.manage_users') }}"
                class="btn" style="background: #64748b; padding: 0.6rem 1rem; border-radius: 8px;">清除</a>
@@ -74,13 +74,28 @@
                     <td style="padding: 10px 12px;">{{ u.USERNAME }}</td>
                     <td style="padding: 10px 12px;">
                         <span style="padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;
-                              background: {% if u.ROLE == 'admin' %}#fee2e2{% elif u.ROLE == 'topicadmin' %}#dcfce7{% else %}#f1f5f9{% endif %};
-                              color: {% if u.ROLE == 'admin' %}#991b1b{% elif u.ROLE == 'topicadmin' %}#166534{% else %}#475569{% endif %};">
+                              background: {% if u.ROLE|lower == 'admin' %}#fee2e2{% elif u.ROLE|lower == 'topicadmin' %}#dcfce7{% else %}#f1f5f9{% endif %};
+                              color: {% if u.ROLE|lower == 'admin' %}#991b1b{% elif u.ROLE|lower == 'topicadmin' %}#166534{% else %}#475569{% endif %};">
                             {{ u.ROLE }}
                         </span>
                     </td>
                     <td style="padding: 10px 12px;">
                         <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                            {# 修改角色 #}
+                            <form action="{{ url_for('admin.manage_users') }}" method="POST"
+                                  style="display: flex; gap: 6px; align-items: center;" data-no-overlay="true">
+                                <input type="hidden" name="action" value="change_role">
+                                <input type="hidden" name="user_id" value="{{ u.USER_ID }}">
+                                <select name="new_role" class="form-control" style="width: 170px; font-size: 0.82rem; padding: 4px 8px;">
+                                    <option value="testuser" {% if u.ROLE|lower == 'testuser' %}selected{% endif %}>一般使用者 (testuser)</option>
+                                    <option value="topicadmin" {% if u.ROLE|lower == 'topicadmin' %}selected{% endif %}>主題館管理 (topicadmin)</option>
+                                    <option value="admin" {% if u.ROLE|lower == 'admin' %}selected{% endif %}>系統管理員 (admin)</option>
+                                </select>
+                                <button type="submit" class="btn"
+                                        style="background:#6366f1; color:white; padding: 4px 10px; border-radius: 6px; font-size:0.82rem;">
+                                    更新角色
+                                </button>
+                            </form>
                             {# 重設密碼 #}
                             <form action="{{ url_for('admin.manage_users') }}" method="POST"
                                   style="display: flex; gap: 6px;" data-no-overlay="true">

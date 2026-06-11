@@ -38,7 +38,7 @@
                     <span class="text-muted">尚未收錄任何書目。</span>
                     {% endfor %}
                 </div>
-                <small class="text-muted d-block mt-1">您可點擊「x」或透過下方搜尋覆蓋名單，所有變更皆須按下底端更新才生效。</small>
+                <small class="text-muted d-block mt-1">您可點擊「x」或透過下方查詢覆蓋名單，所有變更皆須按下底端更新才生效。</small>
             </div>
         </div>
         
@@ -54,9 +54,9 @@
 
     <hr class="my-4">
 
-    <!-- 內建進階搜尋整合介面 -->
+    <!-- 內建進階查詢整合介面 -->
     <div style="background: #f0fdf4; padding: 1.5rem; border-radius: 8px; border: 1px solid #bbf7d0;">
-        <h5 class="fw-bold" style="color: #166534;"><i class="bi bi-search"></i> 從資料庫搜尋並納入主題館</h5>
+        <h5 class="fw-bold" style="color: #166534;"><i class="bi bi-search"></i> 從資料庫查詢並納入主題館</h5>
         <p style="color: #15803d; font-size: 0.9rem;">在此可執行快速的屬性檢索，並直接勾選查出的書目加入上方收錄清單。</p>
         
         <div class="d-flex gap-2 mb-3">
@@ -66,11 +66,11 @@
                 {% endfor %}
             </select>
             <input type="text" id="searchValue" class="form-control" placeholder="請輸入檢索詞...">
-            <button class="btn btn-success" onclick="executeMiniSearch()">搜尋</button>
+            <button class="btn btn-success" onclick="executeMiniSearch()">查詢</button>
         </div>
 
         <div id="searchResultArea" style="display:none;">
-            <p class="fw-bold">搜尋結果 (僅顯示前50筆)：</p>
+            <p class="fw-bold">查詢結果 (僅顯示前50筆)：</p>
             <div id="searchRecords" class="list-group" style="max-height: 300px; overflow-y: auto;">
                 <!-- JS 動態插入 -->
             </div>
@@ -137,12 +137,12 @@
 
         document.getElementById('searchResultArea').style.display = 'block';
         const container = document.getElementById('searchRecords');
-        container.innerHTML = '<div class="p-3 text-center text-muted">搜尋中...</div>';
+        container.innerHTML = '<div class="p-3 text-center text-muted">查詢中...</div>';
 
         try {
             // 利用我們已經整合進 main 的 advanced post API 取得 JSON？
             // 由於 /results 回傳的是 HTML，我們這裡專為 Admin 寫一個 mini api 較安全，
-            // 但考量要求「以進階搜尋模式」，我會向已經存在的 /api/mini_search 模組呼叫。
+            // 但考量要求「以進階查詢模式」，我會向已經存在的 /api/mini_search 模組呼叫。
             const res = await fetch("{{ url_for('search.api_mini_search') }}", {
                 method: 'POST', body: fd
             });
@@ -201,10 +201,14 @@
             });
             const data = await res.json();
             if(res.ok) {
-                msg.style.color = 'green'; msg.innerText = data.message;
+                let successHtml = `<span style="color:green;">${data.message}</span>`;
+                if(data.permalink) {
+                    successHtml += `<br><small style="color:#1d4ed8;">永久連結：<a href="${data.permalink}" target="_blank" style="color:#1d4ed8;">${data.permalink}</a></small>`;
+                }
+                msg.innerHTML = successHtml;
                 setTimeout(function() {
                     window.location.href = "{{ url_for('search.theme_admin') }}";
-                }, 1000);
+                }, 2500);
             } else {
                 msg.style.color = 'red'; msg.innerText = data.message;
             }

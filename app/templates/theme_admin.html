@@ -24,8 +24,16 @@
             <div>
                 <h4 class="mb-1 fw-bold" style="font-size: 1.35rem; color: var(--primary-color);">{{ theme.title }}</h4>
                 <small class="text-secondary">書目數量: {{ theme.sys_nos | length }} 筆</small>
+                <br>
+                <small>
+                    <span style="color:#64748b;">前台連結：</span>
+                    <a href="{{ url_for('search.theme_view', theme_name=id) }}" target="_blank"
+                       style="color: #2563eb; font-family: monospace; font-size: 0.82rem;">
+                        {{ url_for('search.theme_view', theme_name=id, _external=True) }}
+                    </a>
+                </small>
             </div>
-            <a href="{{ url_for('search.theme_edit', theme_name=id) }}" class="btn btn-sm btn-primary" style="color: white !important;">編輯書目與內容</a>
+            <a href="{{ url_for('search.theme_edit', theme_name=id) }}" class="btn btn-sm btn-primary" style="color: white !important; white-space: nowrap;">編輯書目與內容</a>
         </div>
         {% else %}
         <div class="alert alert-secondary">目前尚未建立任何主題館</div>

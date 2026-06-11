@@ -13,6 +13,74 @@ from app.auth.routes import login_required, admin_required, topicadmin_required
 from config import Config
 import traceback
 
+def get_or_create_thumbnails(sys_no, files_list):
+    """
+    對傳入的實體圖片檔案列表，產生安全縮圖並回傳其前端可存取的 static 靜態 URL 列表。
+    """
+    import hashlib
+    import shutil
+    from PIL import Image
+    from flask import url_for
+    
+    # 限制最多處理 5 張圖片
+    target_files = files_list[:5]
+    static_urls = []
+    
+    # 暫存目錄：位於 app/static/photos_cache/<hash_dir_name>
+    # 為了防猜測，在子目錄名稱加入 salt 的 md5
+    salt = "IRLIB_SECURE_SALT_2026"
+    hash_dir_name = hashlib.md5(f"{sys_no}_{salt}".encode('utf-8')).hexdigest()
+    
+    # 使用 absolute path 來建立目錄，確保 100% 寫對位置
+    static_dir = os.path.join(current_app.root_path, 'static', 'photos_cache', hash_dir_name)
+    os.makedirs(static_dir, exist_ok=True)
+    
+    for i, file_path in enumerate(target_files):
+        filename = os.path.basename(file_path)
+        ext = os.path.splitext(filename)[1].lower()
+        
+        # 產生的縮圖檔名：以 index 加上檔名 md5
+        file_hash = hashlib.md5(f"{filename}_{salt}".encode('utf-8')).hexdigest()
+        thumb_filename = f"{i}_{file_hash}.jpg"
+        thumb_path = os.path.join(static_dir, thumb_filename)
+        
+        # 若縮圖已存在且檔案大小正常 (> 1000 bytes)，直接取用
+        # 若大小過小，判定為舊 1 像素 dummy JPEG 快取殘留，將其強制重新生成以排除快取陷阱
+        if os.path.exists(thumb_path) and os.path.getsize(thumb_path) > 1000:
+            static_urls.append(url_for('static', filename=f'photos_cache/{hash_dir_name}/{thumb_filename}'))
+            continue
+            
+        # 生成縮圖
+        try:
+            with Image.open(file_path) as img:
+                # 轉為 RGB 模式以儲存為 JPEG
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    img = img.convert('RGB')
+                
+                # 限制最大寬度為 800px，等比例縮放
+                max_w = 800
+                if img.width > max_w:
+                    ratio = max_w / float(img.width)
+                    new_h = int(float(img.height) * ratio)
+                    img = img.resize((max_w, new_h), Image.Resampling.LANCZOS)
+                
+                # 壓縮保存
+                img.save(thumb_path, 'JPEG', quality=85, optimize=True)
+                
+            static_urls.append(url_for('static', filename=f'photos_cache/{hash_dir_name}/{thumb_filename}'))
+        except Exception as e:
+            # Fallback: 若 Pillow 壓縮失敗，直接複製原圖
+            try:
+                fallback_filename = f"{i}_{file_hash}{ext}"
+                fallback_path = os.path.join(static_dir, fallback_filename)
+                if not os.path.exists(fallback_path):
+                    shutil.copy2(file_path, fallback_path)
+                static_urls.append(url_for('static', filename=f'photos_cache/{hash_dir_name}/{fallback_filename}'))
+            except Exception as copy_err:
+                current_app.logger.error(f"縮圖生成與複製 Fallback 均失敗 ({filename}): {copy_err}")
+                
+    return static_urls
+
 @bp.context_processor
 def inject_config():
     from app.config_manager import PortalConfigManager, COLUMN_MAP
@@ -297,8 +365,8 @@ def do_search():
             # 為了讓機密/一般等級之已公開文獻皆能被讀者搜尋展現，此處直接放行檢索，資安控制完全由下載 API 校驗把關。
             
             if q:
-                where_clauses.append("SEARCH_TEXT LIKE :q")
-                params['q'] = f"%{q}%"
+                where_clauses.append("LOWER(SEARCH_TEXT) LIKE :q")
+                params['q'] = f"%{q.lower()}%"
             if year_filter:
                 where_clauses.append("(YEAR = :year OR SUBSTR(PUBLISH_DATE, 1, 4) = :year)")
                 params['year'] = year_filter
@@ -467,6 +535,32 @@ def do_search():
                 else:
                     raise o_err
 
+            # ── 對 Oracle 模式查詢結果進行實體欄位還原映射，以相容簡目頁 (unified_results.html) 的 get_dynamic_fields_with_labels ──
+            for r in results:
+                dt = r.get('DATA_TYPE')
+                r['TITLE'] = r.get('TITLE') or '無標題'
+                r['SUMMARY'] = r.get('SUMMARY') or ''
+                r['DEPT_NAME'] = r.get('DEPT_NAME') or ''
+                if dt == '技術報告':
+                    r['OVC_RP_NO'] = r.get('SYS_NO')
+                    r['OVN_RP_NAME'] = r.get('TITLE')
+                    r['OVC_YEAR'] = r.get('YEAR')
+                    r['OVC_HOST_NAME'] = r.get('DEPT_NAME')
+                    r['OVC_PUBLISH_UNIT'] = r.get('DEPT_NAME')
+                elif dt == '史政':
+                    r['OVC_HS_NO'] = r.get('SYS_NO')
+                    r['OVN_HS_NAME'] = r.get('TITLE')
+                    r['OVC_HS_PULISH_YEAE'] = r.get('YEAR')
+                    r['OVN_HA_BELONG'] = r.get('DEPT_NAME')
+                elif dt == '史政照片':
+                    r['OVC_TO_NO'] = r.get('SYS_NO')
+                    r['OVC_TO_NAME'] = r.get('TITLE')
+                    r['ODT_TO_DATE'] = r.get('YEAR')
+                    r['OVC_TO_APPLY_DEPT1_NAME'] = r.get('DEPT_NAME')
+                elif dt == '逸光報':
+                    r['OVC_PAPER_ID'] = r.get('SYS_NO')
+                    r['OVN_PAPER_NAME'] = r.get('TITLE')
+
         # ===================================================================
         # C. 渲染結果、計算熱門 Facets 與字雲
         # ===================================================================
@@ -507,6 +601,7 @@ def do_search():
             sort=sort_by,
             selected_types=data_types,
             page=page,
+            items_per_page=items_per_page,
             total_items=total_items,
             total_pages=total_pages,
             page_range=page_range,
@@ -629,10 +724,14 @@ def theme_view(theme_name):
         db_mode = current_app.config.get('DATA_DB_MODE', 'ORACLE')
         if db_mode == 'SQLITE':
             pagination_clause = f"LIMIT {items_per_page} OFFSET {offset}"
+            # SQLite 支援 IS NULL ASC 排序語法
+            null_sort_expr = "PUBLISH_DATE IS NULL ASC, PUBLISH_DATE DESC, SYS_NO DESC"
         else:
             pagination_clause = f"OFFSET {offset} ROWS FETCH NEXT {items_per_page} ROWS ONLY"
+            # Oracle 不支援 IS NULL 直接作為排序表達式，需改用 CASE WHEN
+            null_sort_expr = "CASE WHEN PUBLISH_DATE IS NULL THEN 1 ELSE 0 END ASC, PUBLISH_DATE DESC, SYS_NO DESC"
             
-        search_sql = f"SELECT * FROM ({combined_sql}) ORDER BY PUBLISH_DATE IS NULL ASC, PUBLISH_DATE DESC, SYS_NO DESC {pagination_clause}"
+        search_sql = f"SELECT * FROM ({combined_sql}) ORDER BY {null_sort_expr} {pagination_clause}"
         
         try:
             results = execute_query(lambda: get_data_db_conn(), search_sql, param_dict)
@@ -661,7 +760,7 @@ def theme_view(theme_name):
                     except:
                         total_items = 0
                     total_pages = max(1, (total_items + items_per_page - 1) // items_per_page)
-                    search_sql = f"SELECT * FROM ({combined_sql}) ORDER BY PUBLISH_DATE IS NULL ASC, PUBLISH_DATE DESC, SYS_NO DESC {pagination_clause}"
+                    search_sql = f"SELECT * FROM ({combined_sql}) ORDER BY {null_sort_expr} {pagination_clause}"
                     results = execute_query(lambda: get_data_db_conn(), search_sql, param_dict)
                 else:
                     results = []
@@ -844,7 +943,6 @@ def results_view():
 @topicadmin_required
 def api_mini_search():
     from app.oracle_db import build_search_sql
-    from app.search_module import _safe_execute_test_query
     fields = request.form.getlist('field[]')
     ops = request.form.getlist('operator[]')
     vals = request.form.getlist('value[]')
@@ -860,7 +958,8 @@ def api_mini_search():
                 })
     try:
         sql, parameters = build_search_sql("", advanced_filters)
-        records = _safe_execute_test_query(sql, parameters)
+        # 使用連線池版本（與主系統查詢路徑一致），而非 oracle_db 的非池直連版本
+        records = execute_query(lambda: get_data_db_conn(), sql, parameters)
         
         # Format for JSON
         res_list = []
@@ -904,9 +1003,12 @@ def get_detail(token):
         doc_id = token
         
     from config import Config
-    from app.search_module import _safe_execute_test_query
-    from app.db_manager import execute_query, get_cache_db_conn
+    from app.db_manager import execute_query, get_cache_db_conn, get_data_db_conn
     prefix = getattr(Config, 'DATA_DB_SCHEMA', 'IRLIB.') if hasattr(Config, 'DATA_DB_SCHEMA') else ''
+    
+    def _exec_data(sql, params=None):
+        """以正確的 DATA_DB 連線執行查詢（支援 Oracle 與 SQLite 雙模式）。"""
+        return execute_query(lambda: get_data_db_conn(), sql, params)
     
     try:
         # 1. 先用快取資料庫查出該 doc_id 的 DATA_TYPE
@@ -923,7 +1025,7 @@ def get_detail(token):
         record = None
         if data_type == '技術報告':
             sql = f"SELECT * FROM {prefix}VI_IRLIB_REPORT_MAIN WHERE OVC_RP_NO = :doc_id AND OVC_PUBLIC_TYPE_CDE = 'Y'"  # nosec B608
-            records = _safe_execute_test_query(sql, {'doc_id': doc_id})
+            records = _exec_data(sql, {'doc_id': doc_id})
             if records:
                 # 確保所有鍵均轉換為大寫，防範資料庫引擎大小寫不一致
                 record = {k.upper(): v for k, v in records[0].items()}
@@ -932,7 +1034,7 @@ def get_detail(token):
                 # 額外查詢 VI_IRLIB_RP_PROVEDATA 判斷是否有對應之等級修改證明資料
                 try:
                     prove_sql = f"SELECT 1 FROM {prefix}VI_IRLIB_RP_PROVEDATA WHERE OVC_RP_NO = :doc_id"  # nosec B608
-                    prove_res = _safe_execute_test_query(prove_sql, {'doc_id': doc_id})
+                    prove_res = _exec_data(prove_sql, {'doc_id': doc_id})
                     has_prove_data = len(prove_res) > 0
                 except Exception as prove_err:
                     current_app.logger.warning(f"查詢證明表 VI_IRLIB_RP_PROVEDATA 失敗 (可能該表不存在): {prove_err}")
@@ -949,7 +1051,7 @@ def get_detail(token):
                 for tbl, field, rec_key in sub_tables:
                     try:
                         sub_sql = f"SELECT {field} FROM {prefix}{tbl} WHERE OVC_RP_NO = :doc_id"  # nosec B608
-                        sub_res = _safe_execute_test_query(sub_sql, {'doc_id': doc_id})
+                        sub_res = _exec_data(sub_sql, {'doc_id': doc_id})
                         
                         # 自癒容錯：大寫化子表行健
                         vals = []
@@ -965,7 +1067,7 @@ def get_detail(token):
                 # 針對 VI_IRLIB_RP_PLAN 處理 (有兩個欄位)
                 try:
                     plan_sql = f"SELECT OVN_RP_PLAN_NAME, OVC_RP_PLAN_CDE FROM {prefix}VI_IRLIB_RP_PLAN WHERE OVC_RP_NO = :doc_id"  # nosec B608
-                    plan_res = _safe_execute_test_query(plan_sql, {'doc_id': doc_id})
+                    plan_res = _exec_data(plan_sql, {'doc_id': doc_id})
                     
                     # 自癒容錯大寫化
                     plan_names = []
@@ -982,21 +1084,21 @@ def get_detail(token):
 
         elif data_type == '史政':
             sql = f"SELECT * FROM {prefix}VI_IRLIB_HISTORY_MAIN WHERE OVC_HS_NO = :doc_id AND OVC_PUBLIC_TYPE_CDE = 'Y'"  # nosec B608
-            records = _safe_execute_test_query(sql, {'doc_id': doc_id})
+            records = _exec_data(sql, {'doc_id': doc_id})
             if records:
                 record = {k.upper(): v for k, v in records[0].items()}
                 record['DATA_TYPE'] = '史政'
                 
         elif data_type == '史政照片':
             sql = f"SELECT * FROM {prefix}VI_IRLIB_PHOTO_MAIN WHERE OVC_TO_NO = :doc_id AND OVC_PUBLIC_TYPE_CDE = 'Y'"  # nosec B608
-            records = _safe_execute_test_query(sql, {'doc_id': doc_id})
+            records = _exec_data(sql, {'doc_id': doc_id})
             if records:
                 record = {k.upper(): v for k, v in records[0].items()}
                 record['DATA_TYPE'] = '史政照片'
                 
         elif data_type == '逸光報':
             sql = f"SELECT * FROM {prefix}VI_IRLIB_PAPER WHERE OVC_PAPER_ID = :doc_id AND OVC_PUBLIC_TYPE_CDE = 'Y'"  # nosec B608
-            records = _safe_execute_test_query(sql, {'doc_id': doc_id})
+            records = _exec_data(sql, {'doc_id': doc_id})
             if records:
                 record = {k.upper(): v for k, v in records[0].items()}
                 record['DATA_TYPE'] = '逸光報'
@@ -1004,7 +1106,7 @@ def get_detail(token):
         if not record:
             abort(404, description="找不到此公開文件或文件不存在。")
             
-        # ── 依照使用者唯一要求：僅以 OVC_SECRET_LV_CDE 是否為 'NOR' 來判定下載權限，同時補上大寫與小寫雙鍵映射 ──
+        # ── 依照使用者最新要求：僅以 OVC_SECRET_LV_CDE 是否為 'NOR' 來判定下載權限 ──
         ovc_sec_lv = str(record.get('OVC_SECRET_LV_CDE') or '').strip().upper()
         is_nor_val = (ovc_sec_lv == 'NOR')
         
@@ -1035,11 +1137,49 @@ def get_detail(token):
         # 產生永久網址 (簽署的 Token) 依然可用
         permalink_token = token
         
+        # ── 史政、史政照片、逸光報之相片安全輪播縮圖快取處理 ──
+        photo_urls = []
+        has_more_photos = False
+        if data_type in ['史政', '史政照片', '逸光報']:
+            storage_root = os.environ.get('FILE_STORAGE_ROOT', 'E:/IR')
+            target_dir = os.path.join(storage_root, doc_id)
+            if not os.path.exists(target_dir):
+                target_dir = os.path.join(Config.BASE_DIR, 'data', 'IR', doc_id)
+                
+            if os.path.exists(target_dir):
+                try:
+                    all_files = sorted([
+                        os.path.join(target_dir, f) 
+                        for f in os.listdir(target_dir) 
+                        if os.path.isfile(os.path.join(target_dir, f))
+                    ])
+                    # 過濾出圖片檔案
+                    img_files = [
+                        f for f in all_files 
+                        if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.gif'))
+                    ]
+                    total_photos = len(img_files)
+                    if total_photos > 0:
+                        has_more_photos = total_photos > 5
+                        # 呼叫 get_or_create_thumbnails 處理前 5 張
+                        photo_urls = get_or_create_thumbnails(doc_id, img_files)
+                except Exception as img_err:
+                    current_app.logger.warning(f"處理相片目錄時失敗 ({doc_id}): {img_err}")
+        
     except Exception as e:
         current_app.logger.error(f"Detail Query Failed: {str(e)}\n{traceback.format_exc()}")
         abort(500, description="系統內部錯誤。")
 
-    return render_template('search/detail.html', record=record, related_docs=related_docs, permalink_token=permalink_token, has_prove_data=has_prove_data, back_url=back_url)
+    return render_template(
+        'search/detail.html', 
+        record=record, 
+        related_docs=related_docs, 
+        permalink_token=permalink_token, 
+        has_prove_data=has_prove_data, 
+        back_url=back_url,
+        photo_urls=photo_urls,
+        has_more_photos=has_more_photos
+    )
 
 @bp.route('/share/<token>')
 def permalink_view(token):
@@ -1441,7 +1581,12 @@ def api_theme_save():
     if not theme_name or not title:
         return {"status": "error", "message": "主題名稱與代號為必填。"}, 400
     ThemeManager.update_theme(theme_name, title, sys_nos)
-    return {"status": "success", "message": "主題館儲存成功。"}
+    # 產生前台永久連結供管理員複製使用
+    try:
+        permalink = url_for('search.theme_view', theme_name=theme_name, _external=True)
+    except Exception:
+        permalink = f"/theme/{theme_name}"
+    return {"status": "success", "message": "主題館儲存成功。", "permalink": permalink}
 
 @bp.route('/download/<data_type>/<sys_no>')
 @login_required
@@ -1517,12 +1662,13 @@ def export_data():
             where_clauses = ["1=1"]
             params = {}
             
-            # 安全防線：僅匯出一般密等的資料
-            where_clauses.append("SECRET_LV_CDE = '一般'")
+            # 安全防線：技術報告僅匯出 NOR 密等；其他資料類型無密等限制（SECRET_LV_CDE 為 NULL 或空白）
+            where_clauses.append("(SECRET_LV_CDE = 'NOR' OR SECRET_LV_CDE IS NULL OR SECRET_LV_CDE = '')")
+
             
             if q:
-                where_clauses.append("SEARCH_TEXT LIKE :q")
-                params['q'] = f"%{q}%"
+                where_clauses.append("LOWER(SEARCH_TEXT) LIKE :q")
+                params['q'] = f"%{q.lower()}%"
             if year_filter:
                 where_clauses.append("YEAR = :year")
                 params['year'] = year_filter
@@ -1629,16 +1775,51 @@ def export_data():
                 d['SECRET_LV_CDE'] = d['SECRET_LV']
             norm_results.append(d)
 
-        df = pd.DataFrame(norm_results)
-        df.rename(columns={
-            'DATA_TYPE': '資料類型', 'SYS_NO': '系統識別碼', 'TITLE': '標題',
-            'SUMMARY': '摘要', 'AUTHOR': '作者/相關人員', 'PUBLISH_DATE': '發布/發生日期',
-            'YEAR': '年度', 'DEPT_NAME': '單位名稱', 'SECRET_LV_CDE': '機密等級'
-        }, inplace=True)
+        # ── 動態欄位映射：依 fields_config.json SHOW_IN_LIST='Y' 的欄位決定匯出欄 ──
+        # 基礎通用欄位（永遠輸出）
+        base_field_map = {
+            'DATA_TYPE': '資料類型',
+            'SYS_NO': '系統識別碼',
+            'TITLE': '標題',
+            'AUTHOR': '作者/相關人員',
+            'PUBLISH_DATE': '發布/發生日期',
+            'YEAR': '年度',
+            'DEPT_NAME': '單位名稱',
+            'SECRET_LV_CDE': '機密等級',
+            'SECRET_LV': '機密等級',
+        }
         
-        # 只保留 rename 後存在的欄位，防範其它多餘 Oracle 敏感系統欄位露出
-        keep_cols = ['資料類型', '系統識別碼', '標題', '摘要', '作者/相關人員', '發布/發生日期', '年度', '單位名稱', '機密等級']
-        df = df[[c for c in keep_cols if c in df.columns]]
+        # 從 fields_config.json 讀取動態欄位標籤
+        dynamic_col_map = {}
+        try:
+            import json as _json
+            import os as _os
+            if _os.path.exists(Config.FIELDS_CONFIG_PATH):
+                with open(Config.FIELDS_CONFIG_PATH, 'r', encoding='utf-8') as _f:
+                    _cfg = _json.load(_f)
+                    for _item in _cfg:
+                        if _item.get('SHOW_IN_LIST') == 'Y':
+                            fn = _item.get('FIELD_NAME', '').upper()
+                            fl = _item.get('FIELD_LABEL', '')
+                            if fn and fl and fn not in base_field_map:
+                                dynamic_col_map[fn] = fl
+        except Exception as _cfg_err:
+            current_app.logger.warning(f"匯出動態欄位讀取失敗，使用基礎欄位: {_cfg_err}")
+        
+        # 合併欄位對照表（基礎欄位優先，動態欄位補充）
+        full_col_map = {**base_field_map, **dynamic_col_map}
+        
+        df = pd.DataFrame(norm_results)
+        df.rename(columns=full_col_map, inplace=True)
+        
+        # 決定最終輸出欄位順序：
+        # 1. 基礎欄（依固定順序）
+        base_keep = ['資料類型', '系統識別碼', '標題', '作者/相關人員', '摘要', '發布/發生日期', '年度', '單位名稱', '機密等級']
+        # 2. 動態欄（fields_config 中 SHOW_IN_LIST='Y'，已 rename 為中文）
+        dynamic_labels = list(dynamic_col_map.values())
+        # 3. 合併，去重，保留實際存在的欄位
+        desired_cols = base_keep + [c for c in dynamic_labels if c not in base_keep]
+        df = df[[c for c in desired_cols if c in df.columns]]
 
         safe_q = "".join([c for c in q if c.isalnum()])
         base_name = f"export_{safe_q if safe_q else 'all'}"
@@ -1809,6 +1990,24 @@ def download_portal_file(sys_no):
         
     user_id = session.get('user_id')
     now = time.time()
+    
+    # ── 0. 檢測實體檔案表是否存在對應檔案，無則安全重導向 ──
+    from config import Config
+    from app.search_module import _safe_execute_test_query
+    prefix = getattr(Config, 'DATA_DB_SCHEMA', 'IRLIB.') if hasattr(Config, 'DATA_DB_SCHEMA') else ''
+    
+    file_sql = f"SELECT OVC_GUID FROM {prefix}VI_IRLIB_FILE WHERE OVC_SYS_NO = :sys_no"  # nosec B608
+    try:
+        file_res = _safe_execute_test_query(file_sql, {'sys_no': sys_no})
+        has_file = False
+        if file_res:
+            res_upper = {k.upper(): v for k, v in file_res[0].items()}
+            if res_upper.get('OVC_GUID'):
+                has_file = True
+        if not has_file:
+            return render_template('search/no_file.html', sys_no=sys_no)
+    except Exception as file_err:
+        current_app.logger.warning(f"檢測檔案表 VI_IRLIB_FILE 失敗 (防呆 Fallback 放行): {file_err}")
     
     # ── 1. 防重複點擊下載限制 (5 秒內) ──
     dup_key = (user_id, sys_no)

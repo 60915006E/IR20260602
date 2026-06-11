@@ -257,7 +257,7 @@ def sso_callback():
         # 4. 在本機資料庫進行使用者對比與防呆註冊
         from app.db_manager import execute_query, execute_update, get_system_db_conn
         
-        users = execute_query(lambda: get_system_db_conn(), "SELECT * FROM USERS WHERE USER_ID = :1", [sso_user_id])
+        users = execute_query(lambda: get_system_db_conn(), "SELECT * FROM USERS WHERE USER_ID = ?", [sso_user_id])
         
         if users:
             user = users[0]
@@ -270,7 +270,7 @@ def sso_callback():
             username = sso_username
             execute_update(
                 lambda: get_system_db_conn(),
-                "INSERT INTO USERS (USER_ID, USERNAME, PASSWORD, ROLE) VALUES (:1, :2, :3, :4)",
+                "INSERT INTO USERS (USER_ID, USERNAME, PASSWORD, ROLE) VALUES (?, ?, ?, ?)",
                 [sso_user_id, username, 'SSO_EXTERNAL_ACCOUNT', role]
             )
             current_app.logger.info(f"SSO Auto-Registration: User {sso_user_id} registered automatically with role {role}.")

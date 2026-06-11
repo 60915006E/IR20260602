@@ -63,7 +63,7 @@
   "auth_mode": "password",
   "maintenance_mode": false,
   "footer_text": "本館地址：100201 臺北市20號 電話：02-2361-9132 （本系統服務窗口請轉分機 172、870）",
-  "level_change_desc": "",
+  "level_change_desc": "※ 本報告因機密等級修正，可提供全文下載。",
   "sso_client_id": "",
   "sso_client_secret": "",
   "sso_auth_url": "",

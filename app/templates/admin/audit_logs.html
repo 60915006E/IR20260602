@@ -17,7 +17,7 @@
     </div>
 
     <h2 style="color: var(--primary-color); margin-bottom: 1rem; font-weight: 700;">系統稽核日誌查詢</h2>
-    <p style="color: #64748b; margin-bottom: 1.5rem;">管理員專屬日誌面板：在此可追蹤同仁與管理者的所有系統級操作，包含登入、搜尋、主題異動以及越權下載攔截防禦等紀錄。</p>
+    <p style="color: #64748b; margin-bottom: 1.5rem;">管理員專屬日誌面板：在此可追蹤同仁與管理者的所有系統級操作，包含登入、查詢、主題異動以及越權下載攔截防禦等紀錄。</p>
 
     <form method="GET" action="{{ url_for('admin.audit_logs_view') }}" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
         <input type="text" name="user" class="search-input" placeholder="過濾使用者 ID..." value="{{ q_user }}" style="flex: 1; min-width: 150px; font-size: 0.95rem; padding: 0.5rem 1rem; border-radius: 8px;">
